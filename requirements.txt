@@ -1,0 +1,14 @@
+opencv-python
+python-box
+easyocr
+Pillow
+numpy
+mss
+pytest
+psutil
+matplotlib
+treys
+poker
+pandas
+pydantic
+rich

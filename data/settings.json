@@ -1,0 +1,15 @@
+{
+  "settings": {
+    "capture": {
+      "monitor": {
+        "index": 2,
+        "auto_validate": true,
+        "fallback_to_primary": true
+      }
+    }
+  },
+  "metadata": {
+    "version": "1.0",
+    "last_modified": "2025-10-11T19:00:14.892889"
+  }
+}
