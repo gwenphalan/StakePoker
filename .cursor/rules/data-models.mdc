@@ -1,0 +1,173 @@
+---
+globs: src/models/*.py
+---
+
+# Data Models & Validation Guidelines
+
+## Pydantic Model Standards
+
+All data models should use Pydantic for validation, serialization, and type safety.
+
+### Core Model Files
+
+- [src/models/card.py](mdc:src/models/card.py) - Card representation (rank, suit)
+- [src/models/player.py](mdc:src/models/player.py) - Player state (seat, position, stack, cards, etc.)
+- [src/models/game_state.py](mdc:src/models/game_state.py) - Complete game state representation
+- [src/models/table_info.py](mdc:src/models/table_info.py) - Table configuration (stakes, currency, etc.)
+- [src/models/hand_record.py](mdc:src/models/hand_record.py) - Hand history tracking
+- [src/models/decision.py](mdc:src/models/decision.py) - Decision recommendations
+
+## Model Design Patterns
+
+### Base Model Structure
+
+```python
+from pydantic import BaseModel, Field, validator
+from typing import Optional, List
+from enum import Enum
+
+class MyModel(BaseModel):
+    """Description of the model."""
+
+    # Required fields
+    required_field: str = Field(..., description="Field description")
+
+    # Optional fields with defaults
+    optional_field: Optional[str] = Field(None, description="Optional field")
+
+    # Fields with validation
+    validated_field: int = Field(..., ge=0, le=100, description="Must be 0-100")
+
+    # Enum fields
+    status: PlayerStatus = Field(..., description="Player status")
+
+    class Config:
+        """Pydantic configuration."""
+        use_enum_values = True
+        validate_assignment = True
+        extra = "forbid"  # Prevent extra fields
+```
+
+### Card Model
+
+```python
+class Card(BaseModel):
+    """Represents a playing card."""
+    rank: str = Field(..., regex=r'^[AKQJT2-9]$', description="Card rank")
+    suit: str = Field(..., regex=r'^(hearts|diamonds|clubs|spades)$', description="Card suit")
+
+    def __str__(self) -> str:
+        return f"{self.rank}{self.suit}"
+
+    @validator('rank')
+    def validate_rank(cls, v):
+        if v not in ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2']:
+            raise ValueError('Invalid card rank')
+        return v
+```
+
+### Player Model
+
+```python
+class Player(BaseModel):
+    """Represents a player at the poker table."""
+    seat_number: int = Field(..., ge=1, le=8, description="Physical seat 1-8")
+    position: Optional[str] = Field(None, description="BTN/SB/BB/UTG/etc")
+    stack: float = Field(..., ge=0, description="Chip stack size")
+    hole_cards: List[Card] = Field(default_factory=list, max_items=2)
+    timer_state: Optional[str] = Field(None, description="purple/red/None")
+    is_dealer: bool = Field(False, description="Has dealer button")
+    current_bet: float = Field(0, ge=0, description="Current bet amount")
+    is_hero: bool = Field(False, description="Is the hero player")
+    is_active: bool = Field(True, description="Player is still in hand")
+
+    @validator('hole_cards')
+    def validate_hole_cards(cls, v):
+        if len(v) > 2:
+            raise ValueError('Cannot have more than 2 hole cards')
+        return v
+```
+
+### Game State Model
+
+```python
+class GameState(BaseModel):
+    """Complete poker game state."""
+    players: List[Player] = Field(..., min_items=2, max_items=8)
+    community_cards: List[Card] = Field(default_factory=list, max_items=5)
+    pot: float = Field(..., ge=0, description="Total pot size")
+    phase: str = Field(..., regex=r'^(preflop|flop|turn|river|showdown)$')
+    active_player: Optional[int] = Field(None, ge=1, le=8)
+    button_position: int = Field(..., ge=1, le=8, description="Dealer button seat")
+    hand_id: Optional[str] = Field(None, description="Unique hand identifier")
+    table_info: TableInfo = Field(..., description="Table configuration")
+
+    @validator('community_cards')
+    def validate_community_cards_by_phase(cls, v, values):
+        phase = values.get('phase')
+        if phase == 'preflop' and len(v) > 0:
+            raise ValueError('Cannot have community cards in preflop')
+        elif phase == 'flop' and len(v) != 3:
+            raise ValueError('Flop must have exactly 3 community cards')
+        elif phase == 'turn' and len(v) != 4:
+            raise ValueError('Turn must have exactly 4 community cards')
+        elif phase == 'river' and len(v) != 5:
+            raise ValueError('River must have exactly 5 community cards')
+        return v
+```
+
+## Validation Rules
+
+### Required Validations
+
+- **Card ranks**: Must be valid poker ranks (A,K,Q,J,T,9-2)
+- **Card suits**: Must be valid suits (hearts,diamonds,clubs,spades)
+- **Seat numbers**: Must be 1-8 (physical table positions)
+- **Stack sizes**: Must be non-negative
+- **Bet amounts**: Must be non-negative
+- **Community cards**: Must match game phase (0 preflop, 3 flop, 4 turn, 5 river)
+
+### Custom Validators
+
+Use Pydantic validators for complex business logic:
+
+```python
+@validator('field_name')
+def validate_field_name(cls, v, values):
+    # Access other field values via 'values' dict
+    other_field = values.get('other_field')
+
+    # Validation logic
+    if condition:
+        raise ValueError('Error message')
+
+    return v
+```
+
+## Serialization & Storage
+
+- Models should be JSON serializable for storage
+- Use `model.dict()` for serialization
+- Use `Model.parse_obj()` for deserialization
+- Handle missing fields gracefully with defaults
+
+## Error Handling
+
+- Use descriptive error messages in validators
+- Log validation failures for debugging
+- Return None or empty collections for invalid data
+- Don't let validation errors crash the application
+
+## Performance Considerations
+
+- Keep models lightweight and focused
+- Avoid complex validation in hot paths
+- Cache validation results when possible
+- Use lazy loading for expensive computations
+
+## Testing Models
+
+- Test all validation scenarios
+- Test edge cases and boundary conditions
+- Test serialization/deserialization
+- Test with invalid data to ensure proper error handling

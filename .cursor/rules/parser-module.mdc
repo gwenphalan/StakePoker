@@ -1,0 +1,113 @@
+---
+globs: src/parser/*.py
+---
+
+# Parser Module Guidelines
+
+## Core Components
+
+The parser module handles all image processing and OCR for extracting game state from poker screenshots.
+
+### Key Files
+
+- [src/parser/ocr_engine.py](mdc:src/parser/ocr_engine.py) - Multi-method OCR with preprocessing optimization
+- [src/parser/image_preprocessor.py](mdc:src/parser/image_preprocessor.py) - Image preprocessing methods for OCR accuracy
+- [src/parser/card_parser.py](mdc:src/parser/card_parser.py) - Card rank/suit detection using OCR + HSV color analysis
+- [src/parser/money_parser.py](mdc:src/parser/money_parser.py) - Pot/stack/bet parsing via OCR
+
+## OCR Engine Pattern
+
+All parsers should use the OCREngine for text extraction:
+
+```python
+from src.parser.ocr_engine import OCREngine
+
+class MyParser:
+    def __init__(self):
+        self.ocr_engine = OCREngine()
+
+    def parse_something(self, image: np.ndarray) -> Optional[str]:
+        text, confidence, method = self.ocr_engine.extract_text(image)
+        if confidence >= self.min_confidence:
+            return self._validate_and_normalize(text)
+        return None
+```
+
+## Multi-Method Preprocessing Strategy
+
+The OCR engine automatically tries multiple preprocessing methods and selects the best result:
+
+1. **Original image** - No preprocessing
+2. **Grayscale** - Convert to grayscale
+3. **Threshold** - Binary thresholding
+4. **Adaptive threshold** - Adaptive binary thresholding
+5. **Denoise** - Noise reduction
+6. **Contrast enhancement** - Improve contrast
+7. **Sharpen** - Edge sharpening
+
+## Card Detection Guidelines
+
+- **Rank Detection**: Use OCR with confidence scoring
+- **Suit Detection**: Use HSV color analysis with configurable ranges
+- **Validation**: Always validate against known card ranks (A,K,Q,J,T,9-2)
+- **Normalization**: Handle "10" → "T" conversion and common OCR mistakes
+
+```python
+# Card parsing example
+result = card_parser.parse_card(card_image)
+if result:
+    rank, suit = result.rank, result.suit
+    confidence = result.confidence
+```
+
+## Money Parsing Guidelines
+
+- Extract monetary values from pot/stack/bet regions
+- Handle currency symbols ($, SC, Gold)
+- Normalize to numeric values for calculations
+- Validate reasonable ranges (e.g., pot > 0, stack > 0)
+
+## Color Detection (Non-OCR)
+
+For timer detection and transparency analysis, use direct pixel analysis:
+
+```python
+# Timer detection - check for purple/red pixels
+PURPLE_RGB = ((120, 200), (50, 150), (150, 255))  # R, G, B ranges
+RED_RGB = ((180, 255), (0, 80), (0, 80))
+
+# Count matching pixels
+matching_pixels = np.sum((image[:,:,0] >= r_min) & (image[:,:,0] <= r_max) &
+                        (image[:,:,1] >= g_min) & (image[:,:,1] <= g_max) &
+                        (image[:,:,2] >= b_min) & (image[:,:,2] <= b_max))
+```
+
+## Error Handling
+
+- Return None for failed parsing attempts
+- Log confidence scores and preprocessing methods used
+- Use structured logging with appropriate levels
+- Validate inputs (non-empty images, proper dimensions)
+
+## Performance Considerations
+
+- OCR is expensive - only run when necessary
+- Cache preprocessing results when possible
+- Log which preprocessing methods work best for optimization
+- Consider reducing preprocessing attempts after learning optimal methods
+
+## Settings Integration
+
+All parsers should use the Settings system for configuration:
+
+```python
+self.settings.create("parser.my_parser.min_confidence", default=0.7)
+self.settings.create("parser.my_parser.enable_feature", default=True)
+```
+
+## Testing Strategy
+
+- Test with various image qualities and lighting conditions
+- Validate against known expected results
+- Test edge cases (empty images, invalid regions)
+- Measure accuracy and confidence scores

@@ -382,5 +382,11 @@
     "y": 574,
     "width": 413,
     "height": 28
+  },
+  "table_info": {
+    "x": 614,
+    "y": 618,
+    "width": 699,
+    "height": 29
   }
 }

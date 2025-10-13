@@ -1,0 +1,84 @@
+---
+alwaysApply: true
+---
+
+# StakePoker Project Structure & Architecture
+
+## Project Overview
+
+Real-time poker advisor for Stake.us that analyzes game state, calculates GTO-based decisions, and provides recommendations via overlay interface.
+
+## Core Architecture
+
+### Module Organization
+
+The project follows a modular architecture with clear separation of concerns:
+
+- **`src/capture/`** - Screen capture and region extraction from Monitor 2
+- **`src/parser/`** - OCR and image processing for game state parsing
+- **`src/models/`** - Pydantic data models for type safety and validation
+- **`src/tracker/`** - Game state tracking, turn detection, and position calculation
+- **`src/advisor/`** - GTO decision engine and equity calculation
+- **`src/overlay/`** - Transparent UI overlay for recommendations
+- **`src/history/`** - Hand history tracking and export functionality
+- **`src/config/`** - Configuration management and settings
+
+### Key Files Reference
+
+- [src/main.py](mdc:src/main.py) - Application entry point with main event loop
+- [PLAN.md](mdc:PLAN.md) - Detailed development roadmap and technical specifications
+- [config/poker_regions.json](mdc:config/poker_regions.json) - Screen region definitions for UI elements
+- [data/user_config.json](mdc:data/user_config.json) - User settings and hero usernames
+- [requirements.txt](mdc:requirements.txt) - Python dependencies
+
+### Development Status
+
+- ✅ **Completed**: Capture module (screen capture, region extraction)
+- 🔄 **In Progress**: Parser module (OCR, image preprocessing, card/money parsing)
+- ⏳ **Planned**: Models, tracker, advisor, overlay, history modules
+
+### Archive Reference
+
+The `archive/` directory contains a previous monolithic prototype that successfully demonstrated core functionality. Files end with `.py.archive` to prevent IDE confusion. Key learnings from archive:
+
+- Timer detection using color analysis (purple=active turn, red=time bank)
+- Transparency detection for folded players
+- Multi-method OCR preprocessing for accuracy
+
+## File Naming Conventions
+
+- Use descriptive, lowercase names with underscores
+- Module files: `descriptive_name.py`
+- Class files: `class_name.py`
+- Test files: `test_module_name.py`
+- Archive files: `original_name.py.archive`
+
+## Import Structure
+
+```python
+# Standard library imports
+import logging
+from typing import Optional, Tuple
+
+# Third-party imports
+import cv2
+import numpy as np
+
+# Local imports (relative to src/)
+from src.parser.ocr_engine import OCREngine
+from src.config.settings import Settings
+```
+
+## Configuration Management
+
+- All settings managed through [src/config/settings.py](mdc:src/config/settings.py)
+- User configuration in [data/user_config.json](mdc:data/user_config.json)
+- Region definitions in [config/poker_regions.json](mdc:config/poker_regions.json)
+- Settings use dot notation: `"parser.ocr.min_confidence"`
+
+## Error Handling
+
+- Use structured logging with appropriate levels (DEBUG, INFO, WARNING, ERROR)
+- Return None for failed operations, raise exceptions for unrecoverable errors
+- Log all OCR attempts with confidence scores and preprocessing methods
+- Validate inputs and provide meaningful error messages

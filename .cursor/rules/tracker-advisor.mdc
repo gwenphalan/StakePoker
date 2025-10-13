@@ -1,0 +1,219 @@
+---
+globs: src/tracker/*.py,src/advisor/*.py
+---
+
+# Tracker & Advisor Module Guidelines
+
+## Tracker Module (`src/tracker/`)
+
+### Core Components
+
+- **`state_machine.py`** - Track game state across frames
+- **`turn_detector.py`** - Check hero's stack for purple/red timer indicators
+- **`phase_detector.py`** - Detect preflop/flop/turn/river transitions
+- **`action_detector.py`** - Track action sequence and betting
+- **`position_calculator.py`** - Calculate BTN/SB/BB/UTG from dealer button
+- **`hand_tracker.py`** - Track hand history by unique hand_id
+- **`hero_detector.py`** - Identify hero's seat from configured usernames
+
+### Turn Detection Logic
+
+```python
+# Hero has purple OR red in stack region = hero's turn
+def is_hero_turn(self, hero_stack_region: np.ndarray) -> bool:
+    purple_pixels = self._count_color_pixels(hero_stack_region, PURPLE_RGB)
+    red_pixels = self._count_color_pixels(hero_stack_region, RED_RGB)
+
+    # Either color indicates it's hero's turn
+    return purple_pixels > 50 or red_pixels > 50
+```
+
+### Hero Detection Pattern
+
+```python
+# Match parsed names to config usernames, store seat_number
+def detect_hero_seat(self, player_names: Dict[int, str]) -> Optional[int]:
+    configured_usernames = self.settings.get("user.usernames")
+
+    for seat_num, name in player_names.items():
+        if name in configured_usernames:
+            return seat_num
+
+    return None  # Hero not found
+```
+
+### Hand Tracking Strategy
+
+- **New hand_id** = new HandRecord
+- **Track until** showdown/fold
+- **Record**: hero seat, position, cards, all actions, result
+- **Calculate**: profit/loss at hand end
+
+### Position Calculation
+
+```python
+def calculate_positions(self, dealer_seat: int, active_players: List[int]) -> Dict[int, str]:
+    """Calculate relative positions from dealer button."""
+    positions = {}
+
+    # Map seats to positions based on dealer button
+    position_order = ['BTN', 'SB', 'BB', 'UTG', 'MP', 'CO']
+
+    for i, seat in enumerate(active_players):
+        relative_pos = (seat - dealer_seat) % len(active_players)
+        positions[seat] = position_order[relative_pos]
+
+    return positions
+```
+
+## Advisor Module (`src/advisor/`)
+
+### Core Components
+
+- **`gto_loader.py`** - Load preflop charts by position
+- **`equity_calculator.py`** - eval7 integration for hand equity
+- **`range_estimator.py`** - Estimate opponent ranges by position + actions
+- **`decision_engine.py`** - Recommend fold/call/raise with reasoning
+- **`postflop_solver.py`** - Postflop equity + EV calculations
+
+### GTO Integration Pattern
+
+```python
+class DecisionEngine:
+    def get_recommendation(self, game_state: GameState) -> Decision:
+        if game_state.phase == 'preflop':
+            return self._preflop_decision(game_state)
+        else:
+            return self._postflop_decision(game_state)
+
+    def _preflop_decision(self, game_state: GameState) -> Decision:
+        """Use GTO charts for preflop decisions."""
+        hero_hand = game_state.get_hero_hand()
+        position = game_state.get_hero_position()
+
+        # Load GTO chart for position
+        chart = self.gto_loader.get_chart(position, game_state.table_info)
+
+        # Get recommendation from chart
+        action = chart.get_action(hero_hand)
+
+        return Decision(
+            action=action,
+            confidence=0.9,  # GTO charts are high confidence
+            reasoning=f"GTO chart recommendation for {position}"
+        )
+```
+
+### Equity Calculation
+
+```python
+def calculate_equity(self, hero_hand: List[Card], community_cards: List[Card],
+                    opponent_range: List[str]) -> float:
+    """Calculate hero's equity against opponent range."""
+
+    # Use eval7 for equity calculation
+    hero_equity = 0.0
+    total_combos = 0
+
+    for combo in opponent_range:
+        # Calculate equity for this specific combo
+        equity = eval7.evaluate(hero_hand, community_cards, combo)
+        hero_equity += equity
+        total_combos += 1
+
+    return hero_equity / total_combos if total_combos > 0 else 0.0
+```
+
+### Decision Logic
+
+```python
+def _postflop_decision(self, game_state: GameState) -> Decision:
+    """Use equity + pot odds for postflop decisions."""
+
+    # Calculate hero's equity
+    hero_hand = game_state.get_hero_hand()
+    community_cards = game_state.community_cards
+    opponent_range = self.range_estimator.estimate_range(game_state)
+
+    equity = self.equity_calculator.calculate_equity(
+        hero_hand, community_cards, opponent_range
+    )
+
+    # Calculate pot odds
+    pot_odds = self._calculate_pot_odds(game_state)
+
+    # Make decision based on equity vs pot odds
+    if equity > pot_odds + 0.1:  # 10% buffer
+        return Decision("raise", confidence=0.8, reasoning=f"Equity {equity:.1%} > pot odds {pot_odds:.1%}")
+    elif equity > pot_odds:
+        return Decision("call", confidence=0.7, reasoning=f"Equity {equity:.1%} > pot odds {pot_odds:.1%}")
+    else:
+        return Decision("fold", confidence=0.9, reasoning=f"Equity {equity:.1%} < pot odds {pot_odds:.1%}")
+```
+
+## State Management
+
+### Game State Tracking
+
+- **Persistent state**: Track across frames to detect changes
+- **Change detection**: Only process when state actually changes
+- **Validation**: Ensure state transitions are valid
+- **Recovery**: Handle temporary parsing failures gracefully
+
+### Performance Optimization
+
+- **Lazy evaluation**: Only calculate decisions when hero's turn
+- **Caching**: Cache expensive calculations (equity, ranges)
+- **Batch processing**: Process multiple detections together
+- **Early exit**: Stop processing when decision is clear
+
+### Error Handling
+
+- **Graceful degradation**: Continue with partial data
+- **Fallback strategies**: Use simpler logic when complex fails
+- **Logging**: Log all state changes and decisions
+- **Validation**: Validate all calculated values
+
+## Integration Patterns
+
+### Main Loop Integration
+
+```python
+# In main.py event loop (500ms)
+def main_loop():
+    # Capture screen
+    regions = extractor.extract_all_regions()
+
+    # Parse game state
+    game_state = parser.parse_game_state(regions)
+
+    # Update tracker
+    tracker.update_state(game_state)
+
+    # Check if hero's turn
+    if tracker.is_hero_turn():
+        # Get recommendation
+        decision = advisor.get_recommendation(game_state)
+
+        # Update overlay
+        overlay.show_decision(decision)
+
+    # Track hand history
+    tracker.track_hand(game_state)
+```
+
+### Settings Integration
+
+```python
+# All modules should use Settings system
+self.settings.create("tracker.turn_detection.threshold", default=50)
+self.settings.create("advisor.gto.chart_path", default="data/gto_charts/")
+self.settings.create("advisor.equity.min_confidence", default=0.7)
+```
+
+## Testing Strategy
+
+- **Unit tests**: Test individual components in isolation
+- **Integration tests**: Test complete workflows
+- **Performance tests**: Ensure real-time requirements met
+- **Accuracy tests**: Validate against known scenarios

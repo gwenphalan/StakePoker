@@ -1,0 +1,210 @@
+---
+alwaysApply: true
+---
+
+# Development Standards & Best Practices
+
+## Code Quality Standards
+
+### Python Style
+
+- Follow PEP 8 style guidelines
+- Use type hints for all function parameters and return values
+- Use descriptive variable and function names
+- Keep functions focused and single-purpose
+- Maximum line length: 100 characters
+
+### Documentation
+
+- Use docstrings for all classes and public methods
+- Follow Google-style docstring format
+- Include usage examples in docstrings
+- Document complex algorithms and business logic
+
+```python
+def parse_card(self, card_image: np.ndarray) -> Optional[CardResult]:
+    """
+    Parse a complete card image to extract rank and suit.
+
+    Args:
+        card_image: BGR image of a single card
+
+    Returns:
+        CardResult with rank, suit, and confidence if both detected successfully, None otherwise
+
+    Example:
+        result = parser.parse_card(card_image)
+        if result:
+            print(f"Card: {result.rank}{result.suit}, Confidence: {result.confidence}")
+    """
+```
+
+### Error Handling
+
+- Use structured logging with appropriate levels
+- Return None for recoverable failures, raise exceptions for unrecoverable errors
+- Log all important operations with context
+- Use try-catch blocks around external dependencies (OCR, file I/O)
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+try:
+    result = self.ocr_engine.extract_text(image)
+    logger.info(f"OCR success: '{result}' (confidence={confidence:.3f})")
+    return result
+except Exception as e:
+    logger.error(f"OCR failed: {e}")
+    return None
+```
+
+### Configuration Management
+
+- Use the Settings system for all configurable parameters
+- Create settings with sensible defaults
+- Use dot notation for hierarchical settings: `"parser.ocr.min_confidence"`
+- Validate settings on startup
+
+```python
+# In __init__ method
+self.settings.create("parser.cards.min_confidence", default=0.7)
+self.settings.create("parser.cards.enable_suit_detection", default=True)
+
+# In methods
+min_confidence = self.settings.get("parser.cards.min_confidence")
+```
+
+## Performance Guidelines
+
+### Image Processing
+
+- Process images in-place when possible to save memory
+- Use appropriate image formats (BGR for OpenCV, RGB for display)
+- Cache expensive operations (OCR model loading, preprocessing)
+- Profile performance-critical sections
+
+### OCR Optimization
+
+- Only run OCR when necessary (not every frame)
+- Use confidence thresholds to avoid low-quality results
+- Log preprocessing method performance for optimization
+- Consider reducing preprocessing attempts after learning optimal methods
+
+### Memory Management
+
+- Release large image arrays when no longer needed
+- Use context managers for resource cleanup
+- Monitor memory usage in long-running processes
+- Avoid memory leaks in loops
+
+## Testing Standards
+
+### Unit Testing
+
+- Test all public methods with valid and invalid inputs
+- Test edge cases and boundary conditions
+- Mock external dependencies (OCR, file I/O)
+- Use descriptive test names that explain the scenario
+
+```python
+def test_parse_card_valid_input(self):
+    """Test card parsing with valid card image."""
+    # Arrange
+    card_image = self.load_test_image("ace_hearts.png")
+
+    # Act
+    result = self.card_parser.parse_card(card_image)
+
+    # Assert
+    self.assertIsNotNone(result)
+    self.assertEqual(result.rank, "A")
+    self.assertEqual(result.suit, "hearts")
+    self.assertGreater(result.confidence, 0.7)
+```
+
+### Integration Testing
+
+- Test complete workflows end-to-end
+- Use real test data when possible
+- Test error recovery scenarios
+- Validate performance requirements
+
+### Test Data
+
+- Store test images in `tests/data/` directory
+- Use representative samples of different conditions
+- Include edge cases (poor lighting, blurry images)
+- Document expected results for each test case
+
+## Logging Standards
+
+### Log Levels
+
+- **DEBUG**: Detailed information for debugging (OCR attempts, pixel counts)
+- **INFO**: General information about program execution (successful operations)
+- **WARNING**: Something unexpected happened but program continues (low confidence OCR)
+- **ERROR**: Serious problem occurred (OCR failure, file not found)
+
+### Log Format
+
+- Include relevant context (confidence scores, method names, file paths)
+- Use structured logging for machine parsing
+- Log performance metrics for optimization
+- Avoid logging sensitive information
+
+```python
+logger.info(f"OCR success: '{text}' (confidence={confidence:.3f}, method={method})")
+logger.warning(f"Low confidence OCR: '{text}' (confidence={confidence:.3f}, threshold={min_confidence})")
+logger.error(f"Failed to load image: {file_path}")
+```
+
+## File Organization
+
+### Module Structure
+
+- One class per file (except for closely related classes)
+- Use `__init__.py` files to expose public APIs
+- Group related functionality in packages
+- Keep imports organized (stdlib, third-party, local)
+
+### Naming Conventions
+
+- Files: `snake_case.py`
+- Classes: `PascalCase`
+- Functions/variables: `snake_case`
+- Constants: `UPPER_SNAKE_CASE`
+- Private methods: `_leading_underscore`
+
+## Git Workflow
+
+### Commit Messages
+
+- Use descriptive commit messages
+- Include context about what changed and why
+- Reference issue numbers when applicable
+- Keep commits focused and atomic
+
+### Branch Strategy
+
+- Use feature branches for new development
+- Keep main branch stable and deployable
+- Use descriptive branch names: `feature/card-parser-improvements`
+
+## Security Considerations
+
+- Don't log sensitive information (passwords, API keys)
+- Validate all user inputs
+- Use secure file handling practices
+- Keep dependencies updated for security patches
+
+## Code Review Checklist
+
+- [ ] Code follows style guidelines
+- [ ] All functions have docstrings
+- [ ] Error handling is appropriate
+- [ ] Logging is used correctly
+- [ ] Tests cover new functionality
+- [ ] Performance implications considered
+- [ ] Security considerations addressed

@@ -1,0 +1,176 @@
+---
+description: Poker domain knowledge and game rules
+---
+
+# Poker Domain Knowledge & Game Rules
+
+## Poker Fundamentals
+
+### Card System
+
+- **Ranks**: A, K, Q, J, T, 9, 8, 7, 6, 5, 4, 3, 2 (Ace high)
+- **Suits**: Hearts (♥), Diamonds (♦), Clubs (♣), Spades (♠)
+- **Deck**: 52 cards total
+- **Hand Rankings**: High Card < Pair < Two Pair < Three of a Kind < Straight < Flush < Full House < Four of a Kind < Straight Flush < Royal Flush
+
+### Table Positions
+
+- **Dealer Button (BTN)**: Last to act preflop, first to act postflop
+- **Small Blind (SB)**: Left of dealer, posts small blind
+- **Big Blind (BB)**: Left of small blind, posts big blind
+- **Under the Gun (UTG)**: First to act preflop (left of big blind)
+- **Middle Position (MP)**: Between UTG and cutoff
+- **Cutoff (CO)**: Right of dealer button
+- **Position order**: UTG → MP → CO → BTN → SB → BB
+
+### Betting Rounds
+
+1. **Preflop**: After hole cards dealt, before community cards
+2. **Flop**: After first 3 community cards
+3. **Turn**: After 4th community card
+4. **River**: After 5th community card
+5. **Showdown**: If multiple players remain
+
+### Game Phases
+
+- **Preflop**: 0 community cards, 2 hole cards per player
+- **Flop**: 3 community cards visible
+- **Turn**: 4 community cards visible
+- **River**: 5 community cards visible
+- **Showdown**: All cards revealed, best hand wins
+
+## Stake.us Specific
+
+### Timer System
+
+- **Purple indicator**: Player's normal turn (standard time)
+- **Red indicator**: Player's turn in time bank (running out of time)
+- **Detection method**: Check player's stack region for color presence
+- **Threshold**: >50 matching pixels indicates timer is active
+
+### Player States
+
+- **Active**: Player is still in the hand
+- **Folded**: Player has folded, no longer in hand
+- **All-in**: Player has committed all chips
+- **Away**: Player is not at table (transparent nameplate)
+
+### Transparency Detection
+
+- **Method**: Compare nameplate region to reference background
+- **Logic**: If background pattern visible → player folded/away
+- **Implementation**: Simple correlation or pixel similarity check
+- **Reference**: Download empty Stake.us table background once
+
+### Table Information
+
+- **Format**: "NLH 0.10/0.20 Gold $5-$20"
+- **Components**:
+  - Game type (NLH = No Limit Hold'em)
+  - Small blind (0.10)
+  - Big blind (0.20)
+  - Currency (Gold/SC)
+  - Min buyin ($5)
+  - Max buyin ($20)
+
+## GTO (Game Theory Optimal) Concepts
+
+### Preflop Ranges
+
+- **Position-based**: Different ranges for different positions
+- **Stack depth**: Adjust ranges based on effective stack size
+- **Opponent modeling**: Adjust based on opponent tendencies
+- **Chart format**: Percentage or combos for each hand
+
+### Postflop Strategy
+
+- **Equity calculation**: Use eval7 or similar library
+- **Pot odds**: Compare pot size to bet size
+- **Implied odds**: Consider future betting rounds
+- **Range vs range**: Consider opponent's likely range
+
+### Decision Factors
+
+- **Position**: Later position = more information
+- **Stack depth**: Deeper stacks = more implied odds
+- **Opponent tendencies**: Tight/loose, aggressive/passive
+- **Board texture**: Wet (draw-heavy) vs dry (paired/low)
+- **Bet sizing**: Pot size, stack size, board texture
+
+## Hand Tracking
+
+### Hand Identification
+
+- **Unique ID**: Parse from hand_num region
+- **Format**: Usually numeric or alphanumeric
+- **Tracking**: Start new hand record on ID change
+- **Validation**: Ensure ID is unique within session
+
+### Action Tracking
+
+- **Preflop actions**: Fold, call, raise, all-in
+- **Postflop actions**: Check, bet, call, raise, fold, all-in
+- **Bet sizing**: Record exact amounts
+- **Position**: Record which player acted
+- **Timing**: Record when action occurred
+
+### Profit/Loss Calculation
+
+- **Hand result**: Win/loss amount for hero
+- **Currency tracking**: Separate Gold and SC tracking
+- **Session tracking**: Cumulative profit/loss
+- **Export format**: CSV or PokerTracker compatible
+
+## Technical Implementation
+
+### Card Detection
+
+- **Rank**: Use OCR with confidence scoring
+- **Suit**: Use HSV color analysis
+- **Validation**: Check against known card combinations
+- **Confidence**: Combine rank and suit confidence scores
+
+### Money Parsing
+
+- **Currencies**: Handle $, SC, Gold symbols
+- **Formats**: Decimal numbers, comma separators
+- **Validation**: Ensure reasonable ranges
+- **Normalization**: Convert to numeric values
+
+### Position Calculation
+
+- **Dealer button**: Find dealer button position
+- **Relative positions**: Calculate BTN/SB/BB/UTG from button
+- **Seat mapping**: Map physical seats (1-8) to positions
+- **Validation**: Ensure positions are valid
+
+### State Management
+
+- **Game state**: Track current phase, pot, active players
+- **Player state**: Track stacks, bets, hole cards, position
+- **Hand state**: Track current hand ID, actions, community cards
+- **Persistence**: Save state for recovery and analysis
+
+## Performance Considerations
+
+### Real-time Requirements
+
+- **Update frequency**: 2 FPS (500ms loop) is sufficient
+- **Turn detection**: Only calculate decisions when hero's turn
+- **Caching**: Cache GTO charts and reference images
+- **Optimization**: Profile and optimize slow operations
+
+### Accuracy Targets
+
+- **Timer detection**: >95% accuracy
+- **Hero detection**: 100% when username parsed correctly
+- **Transparency detection**: >90% accuracy
+- **OCR accuracy**: >90% with multi-method preprocessing
+- **Position calculation**: 100% when dealer button found
+
+### Error Handling
+
+- **Graceful degradation**: Continue operation with partial data
+- **Recovery**: Recover from temporary failures
+- **Logging**: Log all detection attempts and results
+- **Validation**: Validate all parsed data before use
