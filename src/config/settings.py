@@ -72,7 +72,7 @@ class Settings:
         Initialize the settings manager.
         
         Args:
-            settings_file: Path to settings JSON file. Defaults to data/settings.json
+            settings_file: Path to settings JSON file. Defaults to config/settings.json
         """
         if self._initialized:
             return
@@ -81,11 +81,11 @@ class Settings:
         
         # Set default settings file path
         if settings_file is None:
-            self.settings_file = Path(__file__).parent.parent.parent / "data" / "settings.json"
+            self.settings_file = Path(__file__).parent.parent.parent / "config" / "settings.json"
         else:
             self.settings_file = Path(settings_file)
         
-        # Ensure data directory exists
+        # Ensure config directory exists
         self.settings_file.parent.mkdir(parents=True, exist_ok=True)
         
         # Storage for settings values and defaults

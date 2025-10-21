@@ -11,8 +11,8 @@ Usage:
     
     detector = TransparencyDetector()
     
-    # Detect transparency using both name and bank regions
-    result = detector.detect_player_transparency(name_region, bank_region)
+    # Detect transparency using nameplate region
+    result = detector.detect_transparency(nameplate_region)
     if result.is_transparent:
         print(f"Player is folded (confidence: {result.confidence:.3f})")
 """
@@ -59,12 +59,15 @@ class TransparencyDetector:
         
         logger.info("TransparencyDetector initialized")
     
-    def detect_transparency(self, region: np.ndarray) -> TransparencyResult:
+    def detect_transparency(self, nameplate_region: np.ndarray) -> TransparencyResult:
         """
-        Detect if a single region appears transparent.
+        Detect transparency from combined nameplate region using multi-criteria analysis.
+        
+        Uses the same robust analysis as the old dual-region method, analyzing
+        contrast, saturation, and brightness across the combined nameplate region.
         
         Args:
-            region: BGR image region to analyze
+            nameplate_region: BGR image of player nameplate region (name + bank combined)
             
         Returns:
             TransparencyResult with transparency status and confidence
@@ -75,7 +78,7 @@ class TransparencyDetector:
                 confidence=0.0
             )
         
-        if region is None or region.size == 0:
+        if nameplate_region is None or nameplate_region.size == 0:
             logger.warning("Empty region provided to transparency detector")
             return TransparencyResult(
                 is_transparent=False,
@@ -83,10 +86,10 @@ class TransparencyDetector:
             )
         
         try:
-            # Analyze transparency metrics
-            metrics = self._analyze_transparency_metrics(region)
+            # Analyze transparency metrics using multi-criteria approach
+            metrics = self._analyze_transparency_metrics(nameplate_region)
             
-            # Apply detection criteria
+            # Apply multi-criteria detection (same logic as old detect_player_transparency)
             is_transparent, confidence = self._evaluate_transparency(metrics)
             
             logger.debug(f"Transparency detection: {is_transparent} (confidence={confidence:.3f})")
@@ -102,74 +105,6 @@ class TransparencyDetector:
                 is_transparent=False,
                 confidence=0.0
             )
-    
-    def detect_player_transparency(self, name_region: np.ndarray, bank_region: np.ndarray = None) -> TransparencyResult:
-        """
-        Detect transparency using both name and bank regions for better accuracy.
-        
-        Args:
-            name_region: Player name plate region
-            bank_region: Player bank/stack region (optional)
-            
-        Returns:
-            TransparencyResult with combined transparency analysis
-            
-        Example:
-            result = detector.detect_player_transparency(name_region, bank_region)
-            if result.is_transparent:
-                print(f"Player is folded (confidence: {result.confidence:.3f})")
-        """
-        if not self.settings.get("parser.transparency.enabled"):
-            return TransparencyResult(
-                is_transparent=False,
-                confidence=0.0
-            )
-        
-        regions_to_check = [name_region]
-        if bank_region is not None:
-            regions_to_check.append(bank_region)
-        
-        transparency_scores = []
-        confidences = []
-        
-        for i, region in enumerate(regions_to_check):
-            if region is None or region.size == 0:
-                continue
-                
-            try:
-                metrics = self._analyze_transparency_metrics(region)
-                is_transparent, confidence = self._evaluate_transparency(metrics)
-                
-                # Convert boolean to score (0 or 1)
-                transparency_scores.append(1 if is_transparent else 0)
-                confidences.append(confidence)
-                
-                logger.debug(f"Region {i+1} transparency: {is_transparent} (confidence={confidence:.3f})")
-                
-            except Exception as e:
-                logger.error(f"Failed to analyze region {i+1}: {e}")
-                continue
-        
-        if not transparency_scores:
-            return TransparencyResult(
-                is_transparent=False,
-                confidence=0.0
-            )
-        
-        # Calculate combined result
-        avg_transparency_score = sum(transparency_scores) / len(transparency_scores)
-        avg_confidence = sum(confidences) / len(confidences)
-        
-        # Use configurable threshold for multi-region decision
-        threshold = self.settings.get("parser.transparency.multi_region_threshold")
-        is_transparent = avg_transparency_score >= (threshold / len(regions_to_check))
-        
-        logger.debug(f"Multi-region transparency: {is_transparent} (avg_score={avg_transparency_score:.3f}, threshold={threshold/len(regions_to_check):.3f})")
-        
-        return TransparencyResult(
-            is_transparent=is_transparent,
-            confidence=avg_confidence
-        )
     
     def _analyze_transparency_metrics(self, region: np.ndarray) -> Dict[str, float]:
         """

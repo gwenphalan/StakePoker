@@ -30,10 +30,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class TableInfoResult:
-    """Result of table info parsing with room, table number, currency, stakes, and confidence."""
-    room: str
-    table_number: int
-    currency: str  # 'G' or 'S'
+    """Result of table info parsing with stakes and confidence."""
     sb: float
     bb: float
     confidence: float
@@ -41,10 +38,10 @@ class TableInfoResult:
 
 class TableInfoParser:
     """
-    Table info parser for detecting room, table number, currency, and stakes from poker game images.
+    Table info parser for detecting stakes from poker game images.
     
-    Uses OCR for text extraction and flexible regex patterns to parse table information.
-    Supports configurable validation ranges and currency symbols.
+    Uses OCR for text extraction and flexible regex patterns to parse SB/BB values.
+    Supports configurable validation ranges.
     """
     
     def __init__(self):
@@ -65,7 +62,6 @@ class TableInfoParser:
         # Basic detection settings
         self.settings.create("parser.table_info.min_stake", default=0.01)
         self.settings.create("parser.table_info.max_stake", default=10000.0)
-        self.settings.create("parser.table_info.valid_currencies", default=['G', 'S'])
         
         logger.debug("Table info parser settings created")
     
@@ -73,7 +69,6 @@ class TableInfoParser:
         """Load settings values into instance variables."""
         self.min_stake = self.settings.get("parser.table_info.min_stake")
         self.max_stake = self.settings.get("parser.table_info.max_stake")
-        self.valid_currencies = self.settings.get("parser.table_info.valid_currencies")
         
         logger.debug("Table info parser settings loaded")
     
@@ -85,13 +80,12 @@ class TableInfoParser:
             image: Image containing table information to parse
             
         Returns:
-            TableInfoResult with room, table number, currency, stakes, and confidence if detected successfully, None otherwise
+            TableInfoResult with stakes and confidence if detected successfully, None otherwise
             
         Example:
             result = parser.parse_table_info(image)
             if result:
-                print(f"Room: {result.room}, Table: {result.table_number}")
-                print(f"Stakes: {result.currency} {result.sb}/{result.bb}")
+                print(f"Stakes: {result.sb}/{result.bb}")
         """
         if image is None or image.size == 0:
             logger.warning("Empty image provided for table info parsing")
@@ -108,7 +102,7 @@ class TableInfoParser:
             result = self._parse_table_text(text, ocr_confidence)
             
             if result:
-                logger.debug(f"Successfully parsed table info: {result.room} #{result.table_number} {result.currency} {result.sb}/{result.bb} (confidence: {result.confidence:.3f})")
+                logger.debug(f"Successfully parsed table info: {result.sb}/{result.bb} (confidence: {result.confidence:.3f})")
             else:
                 logger.debug(f"Failed to parse table info from text: '{text}'")
             
@@ -191,52 +185,48 @@ class TableInfoParser:
             TableInfoResult or None if parsing fails
         """
         # Flexible regex pattern to handle OCR spacing variations
-        # Example: "Tennessee #2 Hold'em No Limit Stakes: (G) 100/200"
-        pattern = r'(?P<room>[A-Za-z\s]+?)\s*#\s*(?P<table_num>\d+)\s+.*?Stakes:\s*\(\s*(?P<currency>[GS])\s*\)\s*(?P<sb>[\d.]+)\s*/\s*(?P<bb>[\d.]+)'
+        # Look for stakes pattern: "Stakes: (G) 100/200" or "100/200" or similar
+        patterns = [
+            r'Stakes:\s*\(\s*[GS]\s*\)\s*(?P<sb>[\d.]+)\s*/\s*(?P<bb>[\d.]+)',  # "Stakes: (G) 100/200"
+            r'(?P<sb>[\d.]+)\s*/\s*(?P<bb>[\d.]+)',  # Simple "100/200" pattern
+            r'Blinds:\s*(?P<sb>[\d.]+)\s*/\s*(?P<bb>[\d.]+)',  # "Blinds: 100/200"
+        ]
         
-        match = re.search(pattern, text, re.IGNORECASE)
-        if not match:
-            logger.debug(f"Regex pattern did not match text: '{text}'")
-            return None
+        for pattern in patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                try:
+                    # Extract components
+                    sb = float(match.group('sb'))
+                    bb = float(match.group('bb'))
+                    
+                    # Validate parsed values
+                    if not self._validate_stakes(sb, bb):
+                        continue
+                    
+                    # Calculate final confidence
+                    confidence = self._calculate_confidence(ocr_confidence, True)
+                    
+                    return TableInfoResult(
+                        sb=sb,
+                        bb=bb,
+                        confidence=confidence
+                    )
+                    
+                except (ValueError, TypeError) as e:
+                    logger.debug(f"Error parsing regex groups from text '{text}': {e}")
+                    continue
         
-        try:
-            # Extract components
-            room = match.group('room').strip()
-            table_number = int(match.group('table_num'))
-            currency = match.group('currency').upper()
-            sb = float(match.group('sb'))
-            bb = float(match.group('bb'))
-            
-            # Validate parsed values
-            if not self._validate_stakes(sb, bb, currency, table_number, room):
-                return None
-            
-            # Calculate final confidence
-            confidence = self._calculate_confidence(ocr_confidence, True)
-            
-            return TableInfoResult(
-                room=room,
-                table_number=table_number,
-                currency=currency,
-                sb=sb,
-                bb=bb,
-                confidence=confidence
-            )
-            
-        except (ValueError, TypeError) as e:
-            logger.debug(f"Error parsing regex groups from text '{text}': {e}")
-            return None
+        logger.debug(f"No regex pattern matched text: '{text}'")
+        return None
     
-    def _validate_stakes(self, sb: float, bb: float, currency: str, table_number: int, room: str) -> bool:
+    def _validate_stakes(self, sb: float, bb: float) -> bool:
         """
-        Validate parsed stakes and other components.
+        Validate parsed stakes.
         
         Args:
             sb: Small blind amount
             bb: Big blind amount
-            currency: Currency symbol
-            table_number: Table number
-            room: Room name
             
         Returns:
             True if all validations pass, False otherwise
@@ -252,21 +242,6 @@ class TableInfoParser:
         
         if sb < self.min_stake or bb > self.max_stake:
             logger.debug(f"Stakes out of range: sb={sb}, bb={bb} (range: {self.min_stake}-{self.max_stake})")
-            return False
-        
-        # Validate currency
-        if currency not in self.valid_currencies:
-            logger.debug(f"Invalid currency: {currency} (valid: {self.valid_currencies})")
-            return False
-        
-        # Validate table number
-        if table_number <= 0:
-            logger.debug(f"Invalid table number: {table_number} (must be > 0)")
-            return False
-        
-        # Validate room name
-        if not room or not room.strip():
-            logger.debug(f"Invalid room name: '{room}' (must not be empty)")
             return False
         
         return True

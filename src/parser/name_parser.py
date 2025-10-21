@@ -33,7 +33,6 @@ class NameResult:
     name: str
     confidence: float
     is_hero: bool
-    is_transparent: bool  # Placeholder for future transparency detection
 
 
 class NameParser:
@@ -169,7 +168,6 @@ class NameParser:
             name=normalized_text,
             confidence=confidence,
             is_hero=is_hero,
-            is_transparent=False  # Placeholder for future transparency detection
         )
     
     def _normalize_text(self, text: str) -> str:
