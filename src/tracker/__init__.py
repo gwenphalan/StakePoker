@@ -4,6 +4,8 @@
 from src.tracker.turn_detector import TurnDetector
 from src.tracker.position_calculator import PositionCalculator
 from src.tracker.hero_detector import HeroDetector
+from src.tracker.state_machine import GameStateMachine
+from src.tracker.hand_tracker import HandTracker
 
-__all__ = ['TurnDetector', 'PositionCalculator', 'HeroDetector']
+__all__ = ['TurnDetector', 'PositionCalculator', 'HeroDetector', 'GameStateMachine', 'HandTracker']
 

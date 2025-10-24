@@ -199,7 +199,7 @@ class CardParser:
         
         # Use OCR engine to extract text with confidence
         try:
-            text, confidence = self.ocr_engine.extract_text_with_confidence(card_image)
+            text, confidence, method = self.ocr_engine.extract_text(card_image)
             if not text:
                 logger.debug("No text extracted from card image")
                 return None

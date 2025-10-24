@@ -124,7 +124,7 @@ class MoneyParser:
         """
         try:
             # Use OCR engine to extract text with confidence
-            text, confidence = self.ocr_engine.extract_text_with_confidence(image)
+            text, confidence, method = self.ocr_engine.extract_text(image)
             return text.strip(), confidence
         except Exception as e:
             logger.error(f"Error extracting text from image: {e}")
