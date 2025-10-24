@@ -51,7 +51,7 @@ class TestRunner:
             Exit code from pytest
         """
         # Build pytest command
-        cmd = ["python", "-m", "pytest"]
+        cmd = [sys.executable, "-m", "pytest"]
         
         # Add test path
         if specific_file:

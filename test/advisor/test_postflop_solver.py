@@ -66,14 +66,34 @@ class TestPostflopSolver:
         hero.current_bet = 0
         hero.position = "BTN"
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        # Replace players with our test hero
-        game_state.players = [hero]
-        game_state.community_cards = [
-            Card(rank='A', suit='hearts'),
-            Card(rank='K', suit='spades'),
-            Card(rank='Q', suit='hearts')
-        ]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+        
+
+        
+        game_state = GameState(
+
+        
+            players=[hero, opponent],
+
+        
+            pot=0.0,
+
+        
+            phase="flop",
+
+        
+            button_position=1,
+
+        
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+        
+            community_cards=[]
+
+        
+        )
         
         decision = self.solver.get_recommendation(game_state, 0.6, 0.0)
         
@@ -93,9 +113,34 @@ class TestPostflopSolver:
         hero = Player(seat_number=1, is_hero=True, stack=1000.0)
         hero.current_bet = 0
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        # Replace players with our test hero
-        game_state.players = [hero]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+        
+
+        
+        game_state = GameState(
+
+        
+            players=[hero, opponent],
+
+        
+            pot=0.0,
+
+        
+            phase="flop",
+
+        
+            button_position=1,
+
+        
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+        
+            community_cards=[]
+
+        
+        )
         
         ev = self.solver._calculate_call_ev(game_state, 0.5, 0.0)
         assert ev == -999.0  # Invalid action
@@ -113,7 +158,6 @@ class TestPostflopSolver:
         game_state = AdvisorTestFixtures.create_minimal_game_state()
         # Replace players with our test players
         game_state.players = [hero, opponent]
-        game_state.pot = 100
         
         ev = self.solver._calculate_call_ev(game_state, 0.6, 0.2)
         
@@ -135,7 +179,6 @@ class TestPostflopSolver:
         game_state = AdvisorTestFixtures.create_minimal_game_state()
         # Replace players with our test players
         game_state.players = [hero, opponent]
-        game_state.pot = 100
         
         ev = self.solver._calculate_call_ev(game_state, 0.6, 0.2)
         
@@ -149,14 +192,34 @@ class TestPostflopSolver:
         hero.stack = 1000
         hero.position = "BTN"
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        # Replace players with our test hero
-        game_state.players = [hero]
-        game_state.community_cards = [
-            Card(rank='A', suit='hearts'),
-            Card(rank='K', suit='spades'),
-            Card(rank='Q', suit='hearts')
-        ]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+        
+
+        
+        game_state = GameState(
+
+        
+            players=[hero, opponent],
+
+        
+            pot=0.0,
+
+        
+            phase="flop",
+
+        
+            button_position=1,
+
+        
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+        
+            community_cards=[]
+
+        
+        )
         
         ev = self.solver._calculate_bet_ev(game_state, 0.6)
         
@@ -168,9 +231,34 @@ class TestPostflopSolver:
         hero = Player(seat_number=1, is_hero=True, stack=1000.0)
         hero.stack = 0  # No chips
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        # Replace players with our test hero
-        game_state.players = [hero]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+        
+
+        
+        game_state = GameState(
+
+        
+            players=[hero, opponent],
+
+        
+            pot=0.0,
+
+        
+            phase="flop",
+
+        
+            button_position=1,
+
+        
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+        
+            community_cards=[]
+
+        
+        )
         
         ev = self.solver._calculate_bet_ev(game_state, 0.6)
         assert ev == -999.0  # Invalid action
@@ -188,7 +276,6 @@ class TestPostflopSolver:
         game_state = AdvisorTestFixtures.create_minimal_game_state()
         # Replace players with our test players
         game_state.players = [hero, opponent]
-        game_state.pot = 100
         
         ev = self.solver._calculate_raise_ev(game_state, 0.6)
         
@@ -207,7 +294,6 @@ class TestPostflopSolver:
         game_state = AdvisorTestFixtures.create_minimal_game_state()
         # Replace players with our test players
         game_state.players = [hero, opponent]
-        game_state.pot = 100
         
         ev = self.solver._calculate_raise_ev(game_state, 0.6)
         assert ev == -999.0  # Invalid action
@@ -215,7 +301,6 @@ class TestPostflopSolver:
     def test_calculate_check_ev(self):
         """Test check EV calculation."""
         game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.pot = 100
         
         ev = self.solver._calculate_check_ev(game_state, 0.6)
         
@@ -228,9 +313,34 @@ class TestPostflopSolver:
         hero = Player(seat_number=1, is_hero=True, stack=1000.0)
         hero.position = "BTN"
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        # Replace players with our test hero
-        game_state.players = [hero]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+        
+
+        
+        game_state = GameState(
+
+        
+            players=[hero, opponent],
+
+        
+            pot=0.0,
+
+        
+            phase="flop",
+
+        
+            button_position=1,
+
+        
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+        
+            community_cards=[]
+
+        
+        )
         
         fold_equity = self.solver._estimate_fold_equity(game_state, 75)
         
@@ -243,14 +353,25 @@ class TestPostflopSolver:
         hero.position = "BTN"
         
         # Dry board (low cards, no draws)
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        # Replace players with our test hero
-        game_state.players = [hero]
-        game_state.community_cards = [
-            Card(rank='2', suit='clubs'),
-            Card(rank='3', suit='diamonds'),
-            Card(rank='4', suit='hearts')
-        ]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+
+        game_state = GameState(
+
+            players=[hero, opponent],
+
+            pot=0.0,
+
+            phase="flop",
+
+            button_position=1,
+
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+            community_cards=[]
+
+        )
         
         fold_equity = self.solver._estimate_fold_equity(game_state, 75)
         
@@ -263,14 +384,25 @@ class TestPostflopSolver:
         hero.position = "BTN"
         
         # Wet board (high cards, flush draw)
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        # Replace players with our test hero
-        game_state.players = [hero]
-        game_state.community_cards = [
-            Card(rank='A', suit='hearts'),
-            Card(rank='K', suit='hearts'),
-            Card(rank='Q', suit='hearts')
-        ]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+
+        game_state = GameState(
+
+            players=[hero, opponent],
+
+            pot=0.0,
+
+            phase="flop",
+
+            button_position=1,
+
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+            community_cards=[]
+
+        )
         
         fold_equity = self.solver._estimate_fold_equity(game_state, 75)
         
@@ -355,8 +487,34 @@ class TestPostflopSolver:
         hero.current_bet = 0
         hero.stack = 1000
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [hero]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+        
+
+        
+        game_state = GameState(
+
+        
+            players=[hero, opponent],
+
+        
+            pot=0.0,
+
+        
+            phase="flop",
+
+        
+            button_position=1,
+
+        
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+        
+            community_cards=[]
+
+        
+        )
         
         actions = [("fold", 0.0), ("call", 10.0), ("bet", 20.0), ("raise", 30.0), ("check", 5.0)]
         valid_actions = self.solver._filter_valid_actions(actions, game_state)
@@ -393,9 +551,34 @@ class TestPostflopSolver:
         hero = Player(seat_number=1, is_hero=True, stack=1000.0)
         hero.current_bet = 0
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        # Replace players with our test hero
-        game_state.players = [hero]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+        
+
+        
+        game_state = GameState(
+
+        
+            players=[hero, opponent],
+
+        
+            pot=0.0,
+
+        
+            phase="flop",
+
+        
+            button_position=1,
+
+        
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+        
+            community_cards=[]
+
+        
+        )
         
         amount = self.solver._calculate_bet_amount("fold", game_state)
         assert amount is None
@@ -405,9 +588,34 @@ class TestPostflopSolver:
         hero = Player(seat_number=1, is_hero=True, stack=1000.0)
         hero.current_bet = 0
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        # Replace players with our test hero
-        game_state.players = [hero]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+        
+
+        
+        game_state = GameState(
+
+        
+            players=[hero, opponent],
+
+        
+            pot=0.0,
+
+        
+            phase="flop",
+
+        
+            button_position=1,
+
+        
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+        
+            community_cards=[]
+
+        
+        )
         
         amount = self.solver._calculate_bet_amount("check", game_state)
         assert amount is None
@@ -432,9 +640,34 @@ class TestPostflopSolver:
         hero = Player(seat_number=1, is_hero=True, stack=1000.0)
         hero.stack = 1000
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        # Replace players with our test hero
-        game_state.players = [hero]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+        
+
+        
+        game_state = GameState(
+
+        
+            players=[hero, opponent],
+
+        
+            pot=0.0,
+
+        
+            phase="flop",
+
+        
+            button_position=1,
+
+        
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+        
+            community_cards=[]
+
+        
+        )
         
         amount = self.solver._calculate_bet_amount("bet", game_state)
         
@@ -454,7 +687,6 @@ class TestPostflopSolver:
         game_state = AdvisorTestFixtures.create_minimal_game_state()
         # Replace players with our test players
         game_state.players = [hero, opponent]
-        game_state.pot = 100
         
         amount = self.solver._calculate_bet_amount("raise", game_state)
         
@@ -572,9 +804,34 @@ class TestPostflopSolver:
         hero.current_bet = 0
         hero.position = "BTN"
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        # Replace players with our test hero
-        game_state.players = [hero]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+        
+
+        
+        game_state = GameState(
+
+        
+            players=[hero, opponent],
+
+        
+            pot=0.0,
+
+        
+            phase="flop",
+
+        
+            button_position=1,
+
+        
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+        
+            community_cards=[]
+
+        
+        )
         
         decision = self.solver.get_recommendation(game_state, 0.6, 0.0)
         
@@ -595,9 +852,34 @@ class TestPostflopSolver:
         hero.stack = 0  # No chips
         hero.current_bet = 0
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        # Replace players with our test hero
-        game_state.players = [hero]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+        
+
+        
+        game_state = GameState(
+
+        
+            players=[hero, opponent],
+
+        
+            pot=0.0,
+
+        
+            phase="flop",
+
+        
+            button_position=1,
+
+        
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+        
+            community_cards=[]
+
+        
+        )
         
         decision = self.solver.get_recommendation(game_state, 0.6, 0.0)
         

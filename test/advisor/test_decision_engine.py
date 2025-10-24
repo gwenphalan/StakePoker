@@ -54,12 +54,18 @@ class TestDecisionEngine:
     
     def test_get_recommendation_no_hero(self):
         """Test recommendation when no hero found."""
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        # Remove hero to test no hero scenario
-        game_state.players = [p for p in game_state.players if not p.is_hero]
-        # Add a second player to maintain minimum player count
+        # Create game state with no hero (only opponents)
+        opponent1 = Player(seat_number=2, is_hero=False, stack=1000.0)
         opponent2 = Player(seat_number=3, is_hero=False, stack=1000.0)
-        game_state.players.append(opponent2)
+        
+        game_state = GameState(
+            players=[opponent1, opponent2],
+            pot=0.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25.0, sb=12.5),
+            community_cards=[]
+        )
         
         decision = self.engine.get_recommendation(game_state)
         
@@ -69,9 +75,16 @@ class TestDecisionEngine:
         """Test recommendation when not hero's turn."""
         hero = Player(seat_number=1, is_hero=True, stack=1000.0)
         hero.timer_state = None  # Not hero's turn
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [hero]
+        game_state = GameState(
+            players=[hero, opponent],
+            pot=0.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25.0, sb=12.5),
+            community_cards=[]
+        )
         
         decision = self.engine.get_recommendation(game_state)
         
@@ -82,9 +95,16 @@ class TestDecisionEngine:
         hero = Player(seat_number=1, is_hero=True, stack=1000.0)
         hero.timer_state = "active"
         hero.hole_cards = [Card(rank='A', suit='hearts')]  # Only 1 card
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [hero]
+        game_state = GameState(
+            players=[hero, opponent],
+            pot=0.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25.0, sb=12.5),
+            community_cards=[]
+        )
         
         decision = self.engine.get_recommendation(game_state)
         
@@ -100,11 +120,16 @@ class TestDecisionEngine:
         ]
         hero.position = "UTG"
         hero.stack = 1000
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [hero]
-        game_state.phase = "preflop"
-        game_state.table_info = TableInfo(bb=25, sb=12.5)
+        game_state = GameState(
+            players=[hero, opponent],
+            pot=0.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25, sb=12.5),
+            community_cards=[]
+        )
         
         # Mock GTO loader response
         self.mock_gto_loader.get_preflop_decision.return_value = ("raise", 2.5, "GTO opening range")
@@ -127,15 +152,20 @@ class TestDecisionEngine:
         ]
         hero.position = "BTN"
         hero.stack = 1000
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [hero]
-        game_state.phase = "flop"
-        game_state.community_cards = [
-            Card(rank='A', suit='clubs'),
-            Card(rank='K', suit='hearts'),
-            Card(rank='Q', suit='diamonds')
-        ]
+        game_state = GameState(
+            players=[hero, opponent],
+            pot=0.0,
+            phase="flop",
+            button_position=1,
+            table_info=TableInfo(bb=25.0, sb=12.5),
+            community_cards=[
+                Card(rank='A', suit='clubs'),
+                Card(rank='K', suit='hearts'),
+                Card(rank='Q', suit='diamonds')
+            ]
+        )
         
         # Mock advisor components
         self.mock_range_est.estimate_ranges.return_value = ["AA", "KK", "QQ"]
@@ -159,12 +189,18 @@ class TestDecisionEngine:
     
     def test_preflop_decision_no_hero(self):
         """Test preflop decision with no hero."""
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        # Remove hero to test no hero scenario
-        game_state.players = [p for p in game_state.players if not p.is_hero]
-        # Add a second player to maintain minimum player count
+        # Create game state with no hero (only opponents)
+        opponent1 = Player(seat_number=2, is_hero=False, stack=1000.0)
         opponent2 = Player(seat_number=3, is_hero=False, stack=1000.0)
-        game_state.players.append(opponent2)
+        
+        game_state = GameState(
+            players=[opponent1, opponent2],
+            pot=0.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25.0, sb=12.5),
+            community_cards=[]
+        )
         
         decision = self.engine._preflop_decision(game_state)
         
@@ -174,16 +210,26 @@ class TestDecisionEngine:
     
     def test_preflop_decision_invalid_hand_format(self):
         """Test preflop decision with invalid hand format."""
-        hero = Player(seat_number=1, is_hero=True, stack=1000.0)
-        hero.hole_cards = [
-            Card(rank='INVALID', suit='hearts'),
-            Card(rank='K', suit='spades')
-        ]
-        hero.position = "UTG"
+        # Test that _format_hand returns empty string for cards it can't parse
+        # We can't create invalid Cards due to Pydantic validation, so test the method directly
+        cards = [Card(rank='A', suit='hearts')]  # Wrong count instead
+        hand = self.engine._format_hand(cards)
+        assert hand == ""
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [hero]
-        game_state.table_info = TableInfo(bb=25, sb=12.5)
+        # Test preflop decision handles empty hand format
+        hero = Player(seat_number=1, is_hero=True, stack=1000.0)
+        hero.hole_cards = [Card(rank='A', suit='hearts')]  # Only 1 card
+        hero.position = "UTG"
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+        
+        game_state = GameState(
+            players=[hero, opponent],
+            pot=0.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25, sb=12.5),
+            community_cards=[]
+        )
         
         decision = self.engine._preflop_decision(game_state)
         
@@ -199,10 +245,16 @@ class TestDecisionEngine:
             Card(rank='K', suit='spades')
         ]
         hero.position = None
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [hero]
-        game_state.table_info = TableInfo(bb=25, sb=12.5)
+        game_state = GameState(
+            players=[hero, opponent],
+            pot=0.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25, sb=12.5),
+            community_cards=[]
+        )
         
         decision = self.engine._preflop_decision(game_state)
         
@@ -219,10 +271,16 @@ class TestDecisionEngine:
         ]
         hero.position = "UTG"
         hero.stack = 1000
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [hero]
-        game_state.table_info = TableInfo(bb=25, sb=12.5)
+        game_state = GameState(
+            players=[hero, opponent],
+            pot=0.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25, sb=12.5),
+            community_cards=[]
+        )
         
         # Mock GTO loader response
         self.mock_gto_loader.get_preflop_decision.return_value = ("raise", 2.5, "GTO opening range")
@@ -245,10 +303,16 @@ class TestDecisionEngine:
         ]
         hero.position = "UTG"
         hero.stack = 1000
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [hero]
-        game_state.table_info = TableInfo(bb=25, sb=12.5)
+        game_state = GameState(
+            players=[hero, opponent],
+            pot=0.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25, sb=12.5),
+            community_cards=[]
+        )
         
         # Mock GTO loader to raise exception
         self.mock_gto_loader.get_preflop_decision.side_effect = Exception("GTO error")
@@ -261,12 +325,22 @@ class TestDecisionEngine:
     
     def test_postflop_decision_no_hero(self):
         """Test postflop decision with no hero."""
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        # Remove hero to test no hero scenario
-        game_state.players = [p for p in game_state.players if not p.is_hero]
-        # Add a second player to maintain minimum player count
+        # Create game state with no hero (only opponents)
+        opponent1 = Player(seat_number=2, is_hero=False, stack=1000.0)
         opponent2 = Player(seat_number=3, is_hero=False, stack=1000.0)
-        game_state.players.append(opponent2)
+        
+        game_state = GameState(
+            players=[opponent1, opponent2],
+            pot=0.0,
+            phase="flop",
+            button_position=1,
+            table_info=TableInfo(bb=25.0, sb=12.5),
+            community_cards=[
+                Card(rank='A', suit='clubs'),
+                Card(rank='K', suit='hearts'),
+                Card(rank='Q', suit='diamonds')
+            ]
+        )
         
         decision = self.engine._postflop_decision(game_state)
         
@@ -281,14 +355,20 @@ class TestDecisionEngine:
             Card(rank='A', suit='hearts'),
             Card(rank='K', suit='spades')
         ]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [hero]
-        game_state.community_cards = [
-            Card(rank='A', suit='clubs'),
-            Card(rank='K', suit='hearts'),
-            Card(rank='Q', suit='diamonds')
-        ]
+        game_state = GameState(
+            players=[hero, opponent],
+            pot=0.0,
+            phase="flop",
+            button_position=1,
+            table_info=TableInfo(bb=25.0, sb=12.5),
+            community_cards=[
+                Card(rank='A', suit='clubs'),
+                Card(rank='K', suit='hearts'),
+                Card(rank='Q', suit='diamonds')
+            ]
+        )
         
         # Mock advisor components
         self.mock_range_est.estimate_ranges.return_value = ["AA", "KK", "QQ"]
@@ -317,14 +397,20 @@ class TestDecisionEngine:
             Card(rank='A', suit='hearts'),
             Card(rank='K', suit='spades')
         ]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [hero]
-        game_state.community_cards = [
-            Card(rank='A', suit='clubs'),
-            Card(rank='K', suit='hearts'),
-            Card(rank='Q', suit='diamonds')
-        ]
+        game_state = GameState(
+            players=[hero, opponent],
+            pot=0.0,
+            phase="flop",
+            button_position=1,
+            table_info=TableInfo(bb=25.0, sb=12.5),
+            community_cards=[
+                Card(rank='A', suit='clubs'),
+                Card(rank='K', suit='hearts'),
+                Card(rank='Q', suit='diamonds')
+            ]
+        )
         
         # Mock range estimator to return empty ranges
         self.mock_range_est.estimate_ranges.return_value = []
@@ -351,14 +437,20 @@ class TestDecisionEngine:
             Card(rank='A', suit='hearts'),
             Card(rank='K', suit='spades')
         ]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [hero]
-        game_state.community_cards = [
-            Card(rank='A', suit='clubs'),
-            Card(rank='K', suit='hearts'),
-            Card(rank='Q', suit='diamonds')
-        ]
+        game_state = GameState(
+            players=[hero, opponent],
+            pot=0.0,
+            phase="flop",
+            button_position=1,
+            table_info=TableInfo(bb=25.0, sb=12.5),
+            community_cards=[
+                Card(rank='A', suit='clubs'),
+                Card(rank='K', suit='hearts'),
+                Card(rank='Q', suit='diamonds')
+            ]
+        )
         
         # Mock range estimator to raise exception
         self.mock_range_est.estimate_ranges.side_effect = Exception("Range estimation error")
@@ -373,10 +465,16 @@ class TestDecisionEngine:
         """Test preflop context detection for opening."""
         hero = Player(seat_number=1, is_hero=True, stack=1000.0)
         hero.position = "UTG"
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [hero]
-        game_state.table_info = TableInfo(bb=25, sb=12.5)
+        game_state = GameState(
+            players=[hero, opponent],
+            pot=0.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25, sb=12.5),
+            community_cards=[]
+        )
         
         context = self.engine._get_preflop_context(game_state)
         assert context == "opening"
@@ -470,10 +568,16 @@ class TestDecisionEngine:
         """Test pot odds calculation when not facing a bet."""
         hero = Player(seat_number=1, is_hero=True, stack=1000.0)
         hero.current_bet = 0
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [hero]
-        game_state.pot = 100
+        game_state = GameState(
+            players=[hero, opponent],
+            pot=100.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25.0, sb=12.5),
+            community_cards=[]
+        )
         
         pot_odds = self.engine._calculate_pot_odds(game_state)
         assert pot_odds == 0.0
@@ -536,13 +640,17 @@ class TestDecisionEngine:
     
     def test_format_hand_invalid_ranks(self):
         """Test hand formatting with invalid ranks."""
+        # Since Card model validates ranks on creation, we test that 
+        # _format_hand handles edge cases properly
+        # Test with valid cards but different order to ensure normalization
         cards = [
-            Card(rank='INVALID', suit='hearts'),
-            Card(rank='K', suit='spades')
+            Card(rank='K', suit='spades'),
+            Card(rank='A', suit='hearts')
         ]
         
         hand = self.engine._format_hand(cards)
-        assert hand == ""
+        # Should normalize to higher rank first
+        assert hand == "AKo"
     
     def test_get_default_opponent_range(self):
         """Test default opponent range."""
@@ -569,10 +677,16 @@ class TestDecisionEngine:
         """Test bet amount calculation with stack limit."""
         hero = Player(seat_number=1, is_hero=True, stack=1000.0)
         hero.stack = 50  # Less than bet amount
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [hero]
-        game_state.table_info = TableInfo(bb=25, sb=12.5)
+        game_state = GameState(
+            players=[hero, opponent],
+            pot=0.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25, sb=12.5),
+            community_cards=[]
+        )
         
         # Mock GTO loader to return large bet size
         self.mock_gto_loader.get_preflop_decision.return_value = ("raise", 10.0, "GTO range")
@@ -623,11 +737,15 @@ class TestDecisionEngine:
             Card(rank='A', suit='hearts'),
             Card(rank='K', suit='spades')
         ]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [hero]
-        game_state.phase = "flop"
-        game_state.community_cards = [
+        game_state = GameState(
+            players=[hero, opponent],
+            pot=0.0,
+            phase="flop",
+            button_position=1,
+            table_info=TableInfo(bb=25.0, sb=12.5),
+            community_cards=[
             Card(rank='A', suit='clubs'),
             Card(rank='K', suit='hearts'),
             Card(rank='Q', suit='diamonds')
