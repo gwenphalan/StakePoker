@@ -3,8 +3,8 @@ import numpy as np
 import logging
 from typing import Dict
 
-from src.capture.region_loader import RegionLoader
-from src.capture.screen_capture import ScreenCapture
+from capture.region_loader import RegionLoader
+from capture.screen_capture import ScreenCapture
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +37,8 @@ class RegionExtractor:
         frame = self.screen_capture.capture_frame()
         
         extracted_regions = {}
-        for name, coords in self.regions.items():
-            x, y, w, h = coords['x'], coords['y'], coords['w'], coords['h']
+        for name, region_model in self.regions.items():
+            x, y, w, h = region_model.x, region_model.y, region_model.width, region_model.height
             region_img = frame[y:y+h, x:x+w]
             extracted_regions[name] = region_img
             

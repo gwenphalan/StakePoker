@@ -94,9 +94,17 @@ class ImagePreprocessor:
         """
         if not self.enabled:
             logger.debug("Preprocessing disabled, returning original only")
+            if image is None or image.size == 0:
+                logger.warning("Empty or None image provided to preprocessor")
+                return []
             return [("original", image.copy())]
         
         results = []
+        
+        # Check for None or empty image
+        if image is None or image.size == 0:
+            logger.warning("Empty or None image provided to preprocessor")
+            return results
         
         # Always include original as first option
         if "original" in self.methods:

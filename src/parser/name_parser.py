@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class NameResult:
     """Result of name parsing with name, confidence, and hero status."""
-    name: str
+    name: Optional[str]
     confidence: float
     is_hero: bool
 
@@ -94,15 +94,15 @@ class NameParser:
                 print(f"Player 1: {result.name} (hero: {result.is_hero}, conf: {result.confidence})")
         """
         if name_region_image is None or name_region_image.size == 0:
-            logger.warning("Empty name region image provided")
-            return None
+            logger.debug("Empty name region image provided - returning high confidence for no name")
+            return NameResult(name=None, confidence=1.0, is_hero=False)
         
         try:
             # Extract text from image using OCR engine
             text, ocr_confidence, method = self._extract_text_from_image(name_region_image)
             if not text:
-                logger.debug("No text extracted from name region image")
-                return None
+                logger.debug("No text extracted from name region image - returning high confidence for no name")
+                return NameResult(name=None, confidence=1.0, is_hero=False)
             
             # Parse name from the extracted text
             result = self._parse_name_text(text, ocr_confidence)
@@ -116,7 +116,7 @@ class NameParser:
             
         except Exception as e:
             logger.error(f"Error during player {player_number} name parsing: {e}")
-            return None
+            return NameResult(name=None, confidence=1.0, is_hero=False)  # High confidence for no name on error
     
     def _extract_text_from_image(self, image) -> Tuple[str, float, str]:
         """
@@ -148,15 +148,15 @@ class NameParser:
             NameResult object or None if parsing fails
         """
         if not text:
-            return None
+            return NameResult(name=None, confidence=1.0, is_hero=False)  # High confidence for no name
         
         # Normalize text to handle OCR spacing issues
         normalized_text = self._normalize_text(text)
         
         # Validate the name
         if not self._validate_name(normalized_text):
-            logger.debug(f"Name validation failed for: '{normalized_text}'")
-            return None
+            logger.debug(f"Name validation failed for: '{normalized_text}' - returning high confidence for no name")
+            return NameResult(name=None, confidence=1.0, is_hero=False)
         
         # Check if this is a hero name
         is_hero = self._is_hero_name(normalized_text)

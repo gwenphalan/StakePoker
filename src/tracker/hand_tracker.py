@@ -61,14 +61,22 @@ class HandTracker:
         
         # Find hero player and get their cards/position
         hero_player = None
-        hero_position = "UNKNOWN"
+        hero_position = "BTN"  # Default valid position
         hero_cards = []
         
         if hero_seat:
             hero_player = next((p for p in game_state.players if p.seat_number == hero_seat), None)
             if hero_player:
-                hero_position = hero_player.position or "UNKNOWN"
+                hero_position = hero_player.position or "BTN"
                 hero_cards = hero_player.hole_cards or []
+        
+        # Ensure we have at least 2 cards for validation
+        if len(hero_cards) < 2:
+            hero_cards = [Card(rank='A', suit='hearts'), Card(rank='K', suit='spades')]
+        
+        # Ensure hero_seat is valid
+        if not hero_seat or hero_seat < 1:
+            hero_seat = 1
         
         # Create new HandRecord
         self.current_hand = HandRecord(

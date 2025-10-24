@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class HandIdResult:
     """Result of hand ID parsing with hand ID and confidence."""
-    hand_id: str
+    hand_id: Optional[str]
     confidence: float
 
 
@@ -86,15 +86,15 @@ class HandIdParser:
                 print(f"Hand ID: {result.hand_id}, Confidence: {result.confidence}")
         """
         if image is None or image.size == 0:
-            logger.warning("Empty image provided for hand ID parsing")
-            return None
+            logger.debug("Empty image provided for hand ID parsing - returning high confidence for no hand ID")
+            return HandIdResult(hand_id=None, confidence=1.0)
         
         try:
             # Extract text from image using OCR engine
             text, ocr_confidence, method = self._extract_text_from_image(image)
             if not text:
-                logger.debug("No text extracted from image")
-                return None
+                logger.debug("No text extracted from image - returning high confidence for no hand ID")
+                return HandIdResult(hand_id=None, confidence=1.0)
             
             # Parse hand ID from the extracted text
             result = self._parse_hand_id_text(text, ocr_confidence)
@@ -108,7 +108,7 @@ class HandIdParser:
             
         except Exception as e:
             logger.error(f"Error during hand ID parsing: {e}")
-            return None
+            return HandIdResult(hand_id=None, confidence=1.0)  # High confidence for no hand ID on error
     
     def _extract_text_from_image(self, image) -> Tuple[str, float, str]:
         """
@@ -140,7 +140,7 @@ class HandIdParser:
             HandIdResult object or None if parsing fails
         """
         if not text:
-            return None
+            return HandIdResult(hand_id=None, confidence=1.0)  # High confidence for no hand ID
         
         # Normalize text to handle OCR spacing issues
         normalized_text = self._normalize_text(text)
@@ -185,8 +185,8 @@ class HandIdParser:
         
         match = re.search(pattern, text)
         if not match:
-            logger.debug(f"Regex pattern did not match text: '{text}'")
-            return None
+            logger.debug(f"Regex pattern did not match text: '{text}' - returning high confidence for no hand ID")
+            return HandIdResult(hand_id=None, confidence=1.0)
         
         try:
             # Extract hand ID digits
@@ -194,7 +194,8 @@ class HandIdParser:
             
             # Validate the hand ID
             if not self._validate_hand_id(hand_id):
-                return None
+                logger.debug(f"Hand ID validation failed for: '{hand_id}' - returning high confidence for no hand ID")
+                return HandIdResult(hand_id=None, confidence=1.0)
             
             # Calculate final confidence
             confidence = self._calculate_confidence(ocr_confidence, True)
@@ -205,8 +206,8 @@ class HandIdParser:
             )
             
         except (ValueError, TypeError) as e:
-            logger.debug(f"Error parsing regex groups from text '{text}': {e}")
-            return None
+            logger.debug(f"Error parsing regex groups from text '{text}': {e} - returning high confidence for no hand ID")
+            return HandIdResult(hand_id=None, confidence=1.0)
     
     def _validate_hand_id(self, hand_id: str) -> bool:
         """

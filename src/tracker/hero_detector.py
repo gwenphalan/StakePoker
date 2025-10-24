@@ -128,7 +128,7 @@ class HeroDetector:
         Returns:
             List of hero usernames from settings
         """
-        return self.settings.get("parser.names.hero_usernames", default=["GalacticAce"])
+        return self.settings.get("parser.names.hero_usernames") or ["GalacticAce"]
     
     def update_hero_usernames(self, usernames: list[str]) -> None:
         """

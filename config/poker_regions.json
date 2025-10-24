@@ -388,5 +388,53 @@
     "y": 618,
     "width": 699,
     "height": 29
+  },
+  "player_1_nameplate": {
+    "x": 1206,
+    "y": 823,
+    "width": 193,
+    "height": 72
+  },
+  "player_2_nameplate": {
+    "x": 865,
+    "y": 838,
+    "width": 193,
+    "height": 72
+  },
+  "player_3_nameplate": {
+    "x": 522,
+    "y": 820,
+    "width": 193,
+    "height": 72
+  },
+  "player_4_nameplate": {
+    "x": 306,
+    "y": 555,
+    "width": 193,
+    "height": 72
+  },
+  "player_5_nameplate": {
+    "x": 521,
+    "y": 270,
+    "width": 193,
+    "height": 72
+  },
+  "player_6_nameplate": {
+    "x": 863,
+    "y": 200,
+    "width": 193,
+    "height": 72
+  },
+  "player_7_nameplate": {
+    "x": 1206,
+    "y": 269,
+    "width": 193,
+    "height": 72
+  },
+  "player_8_nameplate": {
+    "x": 1419,
+    "y": 554,
+    "width": 193,
+    "height": 72
   }
 }

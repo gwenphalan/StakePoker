@@ -7,7 +7,7 @@ from pydantic import BaseModel, ValidationError
 # Define the path to the regions file relative to the project root.
 # This assumes 'src' is in the project root.
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-REGIONS_FILE_PATH = PROJECT_ROOT / "data" / "regions.json"
+REGIONS_FILE_PATH = PROJECT_ROOT / "config" / "poker_regions.json"
 
 class RegionModel(BaseModel):
     """
@@ -21,14 +21,14 @@ class RegionModel(BaseModel):
 
 def load_regions_typed() -> Dict[str, RegionModel]:
     """
-    Loads poker region definitions from 'data/regions.json', validates them
+    Loads poker region definitions from 'config/poker_regions.json', validates them
     against the RegionModel, and returns them as typed objects.
 
     Returns:
         A dictionary mapping region names to validated RegionModel objects.
 
     Raises:
-        FileNotFoundError: If 'data/regions.json' does not exist.
+        FileNotFoundError: If 'config/poker_regions.json' does not exist.
         ValidationError: If the region data is malformed.
     """
     if not REGIONS_FILE_PATH.exists():
@@ -49,7 +49,7 @@ def load_regions_typed() -> Dict[str, RegionModel]:
 
 def save_regions_typed(regions: Dict[str, RegionModel]) -> None:
     """
-    Saves a dictionary of RegionModel objects to 'data/regions.json'.
+    Saves a dictionary of RegionModel objects to 'config/poker_regions.json'.
 
     Args:
         regions: A dictionary mapping region names to RegionModel objects.
@@ -57,7 +57,7 @@ def save_regions_typed(regions: Dict[str, RegionModel]) -> None:
     Raises:
         IOError: If the file cannot be written.
     """
-    # Ensure the 'data' directory exists
+    # Ensure the 'config' directory exists
     REGIONS_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     # Convert Pydantic models back to dictionaries for JSON serialization
@@ -70,3 +70,34 @@ def save_regions_typed(regions: Dict[str, RegionModel]) -> None:
     except IOError as e:
         print(f"Error saving regions to {REGIONS_FILE_PATH}: {e}")
         raise
+
+
+class RegionLoader:
+    """
+    Loads and manages poker table region definitions.
+    
+    Provides a simple interface for loading region definitions from JSON files
+    and converting them to RegionModel objects for validation.
+    """
+    
+    def __init__(self):
+        """Initialize the RegionLoader."""
+        self.regions_file_path = REGIONS_FILE_PATH
+    
+    def load_regions(self) -> Dict[str, RegionModel]:
+        """
+        Load regions from the configured file.
+        
+        Returns:
+            Dictionary mapping region names to RegionModel objects
+        """
+        return load_regions_typed()
+    
+    def save_regions(self, regions: Dict[str, RegionModel]) -> None:
+        """
+        Save regions to the configured file.
+        
+        Args:
+            regions: Dictionary mapping region names to RegionModel objects
+        """
+        save_regions_typed(regions)

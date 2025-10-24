@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class StatusResult:
     """Result of status parsing with status text and confidence."""
-    status: str
+    status: Optional[str]
     confidence: float
 
 
@@ -57,13 +57,25 @@ class StatusParser:
         """Create all status parser settings with defaults."""
         # Basic detection settings
         self.settings.create("parser.status.min_confidence", default=0.7)
-        self.settings.create("parser.status.valid_statuses", default={
+        self.settings.create("parser.status.valid_statuses", default=[
             '', 'call', 'raise', 'check', 'bb', 'sb', 'fold', 'bet',
             'all-in', 'away', 'straddle', 'show cards', 'decline straddle'
-        })
+        ])
         self.settings.create("parser.status.ocr_error_corrections", default={
             'aii-in': 'all-in', 
-            'ai-in': 'all-in'
+            'ai-in': 'all-in',
+            'ail-in': 'all-in',
+            'allin': 'all-in',
+            'all in': 'all-in',
+            'folded': 'fold',
+            'folding': 'fold',
+            'calling': 'call',
+            'raising': 'raise',
+            'betting': 'bet',
+            'checking': 'check',
+            'away from table': 'away',
+            'decline straddle': 'decline straddle',
+            'show cards': 'show cards'
         })
         self.settings.create("parser.status.confidence_penalty_invalid", default=0.5)
         
@@ -72,7 +84,8 @@ class StatusParser:
     def _load_settings(self) -> None:
         """Load settings values into instance variables."""
         self.min_confidence = self.settings.get("parser.status.min_confidence")
-        self.valid_statuses = self.settings.get("parser.status.valid_statuses")
+        # Convert list to set for faster membership testing
+        self.valid_statuses = set(self.settings.get("parser.status.valid_statuses"))
         self.ocr_error_corrections = self.settings.get("parser.status.ocr_error_corrections")
         self.confidence_penalty_invalid = self.settings.get("parser.status.confidence_penalty_invalid")
         
@@ -94,15 +107,15 @@ class StatusParser:
                 print(f"Status: {result.status}, Confidence: {result.confidence}")
         """
         if image is None or image.size == 0:
-            logger.warning("Empty image provided for status parsing")
-            return None
+            logger.debug("Empty image provided for status parsing - returning high confidence for no status")
+            return StatusResult(status=None, confidence=1.0)
         
         try:
             # Extract text from image using OCR engine
             text, ocr_confidence, method = self._extract_text_from_image(image)
             if not text:
-                logger.debug("No text extracted from status region image")
-                return None
+                logger.debug("No text extracted from status region image - returning high confidence for no status")
+                return StatusResult(status=None, confidence=1.0)
             
             # Parse status from the extracted text
             result = self._parse_status_text(text, ocr_confidence)
@@ -116,7 +129,7 @@ class StatusParser:
             
         except Exception as e:
             logger.error(f"Error during status parsing: {e}")
-            return None
+            return StatusResult(status=None, confidence=1.0)  # High confidence for no status on error
     
     def _extract_text_from_image(self, image) -> Tuple[str, float, str]:
         """
@@ -148,7 +161,7 @@ class StatusParser:
             StatusResult object or None if parsing fails
         """
         if not text:
-            return None
+            return StatusResult(status=None, confidence=1.0)  # High confidence for no status
         
         # Normalize text to handle OCR spacing issues
         normalized_text = self._normalize_text(text)
@@ -166,13 +179,13 @@ class StatusParser:
     
     def _normalize_text(self, text: str) -> str:
         """
-        Normalize text by cleaning up spacing issues from OCR.
+        Normalize text by cleaning up spacing issues from OCR and filtering valid statuses.
         
         Args:
             text: Raw text from OCR
             
         Returns:
-            Normalized text string
+            Normalized text string or empty string if not a valid status
         """
         # Convert to lowercase and strip
         text = text.lower().strip()
@@ -184,8 +197,19 @@ class StatusParser:
         
         # Remove extra whitespace and normalize spacing
         text = re.sub(r'\s+', ' ', text)
+        text = text.strip()
         
-        return text.strip()
+        # Filter out invalid statuses by checking if the text contains a valid status
+        # This handles cases like "fold 09", "All-In (", "a Decline Straddle"
+        valid_status_found = None
+        for valid_status in self.valid_statuses:
+            if valid_status and valid_status in text:
+                # If we find a valid status, use it
+                valid_status_found = valid_status
+                break
+        
+        # If we found a valid status, return it; otherwise return empty string
+        return valid_status_found if valid_status_found is not None else ""
     
     def _validate_status(self, status: str) -> bool:
         """
@@ -197,6 +221,9 @@ class StatusParser:
         Returns:
             True if status is valid, False otherwise
         """
+        # Since we now filter in _normalize_text, empty string means no valid status found
+        if not status:
+            return False
         return status in self.valid_statuses
     
     def _calculate_confidence(self, ocr_confidence: float, validation_passed: bool) -> float:

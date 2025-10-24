@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class AmountResult:
     """Result of money parsing with value and confidence."""
-    value: float
+    value: Optional[float]
     confidence: float
 
 
@@ -92,15 +92,15 @@ class MoneyParser:
                 print(f"Amount: {result.value}, Confidence: {result.confidence}")
         """
         if image is None or image.size == 0:
-            logger.warning("Empty image provided for money parsing")
-            return []
+            logger.debug("Empty image provided for money parsing - returning high confidence for no amount")
+            return [AmountResult(value=None, confidence=1.0)]
         
         try:
             # Extract text from image using OCR engine
             text, ocr_confidence = self._extract_text_from_image(image)
             if not text:
-                logger.debug("No text extracted from image")
-                return []
+                logger.debug("No text extracted from image - returning high confidence for no amount")
+                return [AmountResult(value=None, confidence=1.0)]
             
             # Parse amounts from the extracted text
             amounts = self._parse_amounts_from_text(text, ocr_confidence)
@@ -110,7 +110,7 @@ class MoneyParser:
             
         except Exception as e:
             logger.error(f"Error during money parsing: {e}")
-            return []
+            return [AmountResult(value=None, confidence=1.0)]  # High confidence for no amount on error
     
     def _extract_text_from_image(self, image) -> Tuple[str, float]:
         """
@@ -146,11 +146,18 @@ class MoneyParser:
         amounts = []
         
         for word in words:
-            # Check if word contains digits or abbreviations
-            if any(char.isdigit() for char in word) or any(abbr in word.upper() for abbr in ['K', 'M']):
+            # Check if word contains digits, abbreviations, or special cases
+            if (any(char.isdigit() for char in word) or 
+                any(abbr in word.upper() for abbr in ['K', 'M']) or
+                any(special in word.upper() for special in ['ALL-IN', 'ALLIN', 'AII-IN', 'DISCONNECTED'])):
                 amount_result = self._parse_single_amount(word, ocr_confidence)
                 if amount_result:
                     amounts.append(amount_result)
+        
+        # If no amounts found, return high confidence for no amount
+        if not amounts:
+            logger.debug("No amounts found in text - returning high confidence for no amount")
+            return [AmountResult(value=None, confidence=1.0)]
         
         return amounts
     

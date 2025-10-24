@@ -107,17 +107,17 @@ class TimerDetector:
         if not self.settings.get("parser.timer.enabled"):
             return TimerResult(
                 turn_state='normal',
-                confidence=0.0,
+                confidence=1.0,  # High confidence for no timer when disabled
                 purple_pixels=0,
                 red_pixels=0
             )
         
         # Validate input
         if nameplate_region is None or nameplate_region.size == 0:
-            logger.warning("Empty region provided to timer detector")
+            logger.debug("Empty region provided to timer detector - returning high confidence for no timer")
             return TimerResult(
                 turn_state='normal',
-                confidence=0.0,
+                confidence=1.0,  # High confidence for no timer
                 purple_pixels=0,
                 red_pixels=0
             )
@@ -228,7 +228,7 @@ class TimerDetector:
         
         # Neither color detected
         if not purple_valid and not red_valid:
-            return 'normal', 0.0
+            return 'normal', 1.0  # High confidence for no timer active
         
         # Purple takes priority if both detected (shouldn't happen in practice)
         if purple_valid and purple_pixels >= red_pixels:
@@ -238,7 +238,7 @@ class TimerDetector:
             confidence = self._calculate_confidence(red_pixels, purple_pixels, total_pixels)
             return 'turn_overtime', confidence
         else:
-            return 'normal', 0.0
+            return 'normal', 1.0  # High confidence for no timer active
     
     def _calculate_confidence(self, primary_pixels: int, secondary_pixels: int,
                              total_pixels: int) -> float:

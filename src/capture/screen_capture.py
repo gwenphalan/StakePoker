@@ -2,7 +2,7 @@ import mss
 import numpy as np
 import cv2
 import logging
-from src.capture.monitor_config import MonitorConfig
+from capture.monitor_config import MonitorConfig
 
 logger = logging.getLogger(__name__)
 

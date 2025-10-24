@@ -31,8 +31,8 @@ logger = logging.getLogger(__name__)
 @dataclass
 class TableInfoResult:
     """Result of table info parsing with stakes and confidence."""
-    sb: float
-    bb: float
+    sb: Optional[float]
+    bb: Optional[float]
     confidence: float
 
 
@@ -88,15 +88,15 @@ class TableInfoParser:
                 print(f"Stakes: {result.sb}/{result.bb}")
         """
         if image is None or image.size == 0:
-            logger.warning("Empty image provided for table info parsing")
-            return None
+            logger.debug("Empty image provided for table info parsing - returning low confidence")
+            return TableInfoResult(sb=None, bb=None, confidence=0.0)
         
         try:
             # Extract text from image using OCR engine
             text, ocr_confidence, method = self._extract_text_from_image(image)
             if not text:
-                logger.debug("No text extracted from image")
-                return None
+                logger.debug("No text extracted from image - returning low confidence")
+                return TableInfoResult(sb=None, bb=None, confidence=0.0)
             
             # Parse table info from the extracted text
             result = self._parse_table_text(text, ocr_confidence)
@@ -110,7 +110,7 @@ class TableInfoParser:
             
         except Exception as e:
             logger.error(f"Error during table info parsing: {e}")
-            return None
+            return TableInfoResult(sb=None, bb=None, confidence=0.0)  # Low confidence for error
     
     def _extract_text_from_image(self, image) -> Tuple[str, float, str]:
         """
@@ -142,7 +142,7 @@ class TableInfoParser:
             TableInfoResult object or None if parsing fails
         """
         if not text:
-            return None
+            return TableInfoResult(sb=None, bb=None, confidence=0.0)  # Low confidence for no text
         
         # Normalize text to handle OCR spacing issues
         normalized_text = self._normalize_text(text)
@@ -173,6 +173,28 @@ class TableInfoParser:
         
         return text.strip()
     
+    def _fix_ocr_errors(self, text: str) -> str:
+        """
+        Fix common OCR errors in table info text.
+        
+        Args:
+            text: Raw text from OCR
+            
+        Returns:
+            Text with common OCR errors fixed
+        """
+        # Fix common OCR errors
+        text = text.replace('2nn', '200')  # "2nn" -> "200"
+        text = text.replace('2n', '200')   # "2n" -> "200"
+        text = text.replace('2oo', '200')  # "2oo" -> "200"
+        text = text.replace('2o', '200')   # "2o" -> "200"
+        
+        # Fix other common OCR errors
+        text = text.replace('l00', '100')  # "l00" -> "100"
+        text = text.replace('l0', '10')    # "l0" -> "10"
+        
+        return text
+    
     def _parse_with_regex(self, text: str, ocr_confidence: float) -> Optional[TableInfoResult]:
         """
         Parse table info using flexible regex pattern.
@@ -188,24 +210,38 @@ class TableInfoParser:
         # Look for stakes pattern: "Stakes: (G) 100/200" or "100/200" or similar
         patterns = [
             r'Stakes:\s*\(\s*[GS]\s*\)\s*(?P<sb>[\d.]+)\s*/\s*(?P<bb>[\d.]+)',  # "Stakes: (G) 100/200"
+            r'Stakes:\s*(?P<sb>[\d.]+)\s*/\s*(?P<bb>[\d.]+)',  # "Stakes: 100/200"
             r'(?P<sb>[\d.]+)\s*/\s*(?P<bb>[\d.]+)',  # Simple "100/200" pattern
             r'Blinds:\s*(?P<sb>[\d.]+)\s*/\s*(?P<bb>[\d.]+)',  # "Blinds: 100/200"
+            r'(?P<sb>\d+)\s*/\s*(?P<bb>\d+)',  # More strict integer pattern
+            r'(?P<sb>\d+)\s*/\s*(?P<bb>\d+)',  # Pattern without decimal support
         ]
         
-        for pattern in patterns:
+        # Pre-process text to fix common OCR errors
+        text = self._fix_ocr_errors(text)
+        
+        logger.debug(f"Attempting to parse text: '{text}'")
+        
+        for i, pattern in enumerate(patterns):
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
+                logger.debug(f"Pattern {i+1} matched: '{pattern}' -> {match.groups()}")
                 try:
                     # Extract components
                     sb = float(match.group('sb'))
                     bb = float(match.group('bb'))
                     
+                    logger.debug(f"Extracted stakes: sb={sb}, bb={bb}")
+                    
                     # Validate parsed values
                     if not self._validate_stakes(sb, bb):
+                        logger.debug(f"Validation failed for sb={sb}, bb={bb}")
                         continue
                     
                     # Calculate final confidence
                     confidence = self._calculate_confidence(ocr_confidence, True)
+                    
+                    logger.debug(f"Successfully parsed stakes: {sb}/{bb} (confidence: {confidence:.3f})")
                     
                     return TableInfoResult(
                         sb=sb,
@@ -216,9 +252,11 @@ class TableInfoParser:
                 except (ValueError, TypeError) as e:
                     logger.debug(f"Error parsing regex groups from text '{text}': {e}")
                     continue
+            else:
+                logger.debug(f"Pattern {i+1} did not match: '{pattern}'")
         
-        logger.debug(f"No regex pattern matched text: '{text}'")
-        return None
+        logger.debug(f"No regex pattern matched text: '{text}' - returning low confidence")
+        return TableInfoResult(sb=None, bb=None, confidence=0.0)
     
     def _validate_stakes(self, sb: float, bb: float) -> bool:
         """

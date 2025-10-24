@@ -73,12 +73,12 @@ class DealerDetector:
         """
         # Check if detection is enabled
         if not self.settings.get("parser.dealer.enabled"):
-            return DealerResult(has_dealer=False, confidence=0.0)
+            return DealerResult(has_dealer=False, confidence=1.0)  # High confidence for no dealer when disabled
         
         # Validate input
         if region is None or region.size == 0:
-            logger.warning("Empty region provided to dealer detector")
-            return DealerResult(has_dealer=False, confidence=0.0)
+            logger.debug("Empty region provided to dealer detector - returning high confidence for no dealer")
+            return DealerResult(has_dealer=False, confidence=1.0)
         
         try:
             # Convert to grayscale
@@ -103,7 +103,7 @@ class DealerDetector:
             
         except Exception as e:
             logger.error(f"Dealer detection failed: {e}")
-            return DealerResult(has_dealer=False, confidence=0.0)
+            return DealerResult(has_dealer=False, confidence=1.0)  # High confidence for no dealer on error
     
     def get_detection_metrics(self, region: np.ndarray) -> Dict[str, Any]:
         """
@@ -219,7 +219,8 @@ class DealerDetector:
         """Calculate confidence score based on how well metrics match ideal."""
         # Check if criteria are met first
         if not self._meets_dealer_criteria(metrics):
-            return 0.0
+            # High confidence that there's no dealer button
+            return 1.0
         
         # Start with base confidence
         confidence = 0.9

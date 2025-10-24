@@ -128,7 +128,7 @@ RED_RGB = ((180, 255), (0, 80), (0, 80))
 ### 5. advisor/
 
 - `gto_loader.py` - Load preflop charts by position
-- `equity_calculator.py` - eval7 integration
+- `equity_calculator.py` - treys integration
 - `range_estimator.py` - Estimate ranges by position + actions
 - `decision_engine.py` - Recommend fold/call/raise
 - `postflop_solver.py` - Postflop equity + EV calc
@@ -137,11 +137,17 @@ RED_RGB = ((180, 255), (0, 80), (0, 80))
 
 ### 6. overlay/
 
-- `window.py` - Transparent tkinter window
-- `renderer.py` - Draw recommendations
-- `position_manager.py` - Position above Monitor 2
+- `window.py` - PyQt6 transparent overlay with Windows extended styles (click-through, screenshot exclusion)
+- `renderer.py` - Educational panel rendering (recommendations, reasoning, equity analysis, learning tips)
+- `position_manager.py` - Position overlay on poker monitor using MonitorConfig
 
-**Display:** Action, position, equity, pot odds, time bank indicator (if red), current hand_id
+**Display:**
+
+- Primary recommendation (action + amount) with confidence bar
+- "Why This Play" reasoning section with detailed explanation
+- Equity analysis with visual comparison to pot odds
+- Alternative actions with EV comparison
+- Contextual learning tips to help user learn GTO strategy
 
 ### 7. history/
 
@@ -172,9 +178,9 @@ Event loop: capture → parse → detect hero → detect hand → detect turn �
 **Day 10:** Dealer detection + Timer detection (no preprocessing) ✅
 **Days 11-12:** Models + Position calculation ✅
 **Day 13:** State tracking + Turn detection ✅
-**Day 14:** Hand tracking and history storage  
-**Days 15-17:** GTO loader + Equity calc + Decision engine  
-**Days 18-19:** Overlay with hand info display  
+**Day 14:** Hand tracking and history storage ✅
+**Days 15-17:** GTO loader + Equity calc + Decision engine ✅  
+**Days 18-19:** Overlay with hand info display ✅
 **Days 20-21:** Integration + Testing  
 **Day 22:** Hand history export and session stats
 

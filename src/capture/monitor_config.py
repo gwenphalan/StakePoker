@@ -20,7 +20,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.config.settings import Settings
+from config.settings import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -360,7 +360,7 @@ def get_poker_monitor() -> MonitorInfo:
 
 if __name__ == "__main__":
     # Now import Settings
-    from src.config.settings import Settings
+    from config.settings import Settings
     
     # Setup logging for testing
     logging.basicConfig(

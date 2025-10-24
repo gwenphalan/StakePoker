@@ -41,6 +41,7 @@ from src.models.game_state import GameState
 from src.models.player import Player
 from src.models.card import Card
 from src.models.table_info import TableInfo
+from src.models.hand_record import HandRecord
 
 logger = logging.getLogger(__name__)
 

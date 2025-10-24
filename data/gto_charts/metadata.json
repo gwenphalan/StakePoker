@@ -1,0 +1,26 @@
+{
+  "format": "8-max + 6-max",
+  "stack_depth": "100bb",
+  "solver": "QB Ranges + 6-max Ranges",
+  "source": "qb_ranges/100bb 2.5x 500rake + 6max_range",
+  "generated": "2025-01-21",
+  "note": "GTO ranges for Texas No Limit Hold'em with support for 2-8 players",
+  "positions": {
+    "8max": [
+      "UTG",
+      "MP",
+      "CO",
+      "BTN",
+      "SB",
+      "BB"
+    ],
+    "6max": [
+      "UTG",
+      "MP",
+      "CO",
+      "BTN",
+      "SB",
+      "BB"
+    ]
+  }
+}

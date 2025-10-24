@@ -58,6 +58,13 @@ data/user_config.json
 .coverage
 htmlcov/
 .tox/
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+test-results/
+test-reports/
 
 # Screenshots and debug output
 screenshots/
@@ -72,6 +79,57 @@ Thumbs.db
 # Jupyter
 .ipynb_checkpoints/
 
+# Temporary files and caches
+*.tmp
+*.temp
+*.bak
+*.backup
+.cache/
+*.cache
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
 # Environment variables
 .env
 .env.local
+.env.*.local
+
+# Project-specific temporary files
+temp/
+tmp/
+*.pid
+*.seed
+*.pid.lock
+
+# Documentation builds
+docs/_build/
+site/
+
+# Test-specific files
+test-results.xml
+junit.xml
+test-output/
+test_logs/
+
+# Advisor module specific
+test/advisor/__pycache__/
+test/advisor/*.pyc
+test/advisor/.pytest_cache/
+
+# Test configuration files
+pytest.ini
+
+# Test overlay files (temporary)
+src/overlay/test_overlay.py

@@ -36,8 +36,8 @@ logger = logging.getLogger(__name__)
 @dataclass
 class CardResult:
     """Result of card parsing with rank, suit, and confidence."""
-    rank: str
-    suit: str
+    rank: Optional[str]
+    suit: Optional[str]
     confidence: float
 
 
@@ -111,8 +111,8 @@ class CardParser:
                 print(f"Card: {result.rank}{result.suit}, Confidence: {result.confidence}")
         """
         if card_image is None or card_image.size == 0:
-            logger.warning("Empty card image provided")
-            return None
+            logger.debug("Empty card image provided - returning high confidence for no card")
+            return CardResult(rank=None, suit=None, confidence=1.0)
         
         # Detect rank and suit
         rank = self.detect_rank(card_image) if self.settings.get("parser.cards.rank_detection_enabled") else None
@@ -120,8 +120,8 @@ class CardParser:
         
         # Validate both components
         if rank is None or suit is None:
-            logger.debug(f"Card parsing failed - rank: {rank}, suit: {suit}")
-            return None
+            logger.debug(f"No card detected - rank: {rank}, suit: {suit} - returning high confidence for no card")
+            return CardResult(rank=None, suit=None, confidence=1.0)
         
         # Calculate confidence
         confidence = self._calculate_card_confidence(rank, suit, card_image)

@@ -22,6 +22,7 @@ Usage:
 import easyocr
 import numpy as np
 import logging
+import re
 from typing import Optional, Tuple, List, Dict
 from collections import defaultdict
 
@@ -96,6 +97,11 @@ class OCREngine:
         preprocessing_enabled = self.settings.get("parser.ocr.preprocessing_enabled")
         min_confidence = self.settings.get("parser.ocr.min_confidence")
         
+        # Check for empty or invalid image
+        if image is None or image.size == 0:
+            logger.debug("Empty or None image provided to OCR engine")
+            return "", 1.0, "none"  # High confidence that there's no text in empty image
+        
         best_text = ""
         best_confidence = 0.0
         best_method = "none"
@@ -105,9 +111,18 @@ class OCREngine:
             variants = self.preprocessor.preprocess_all_methods(image)
             logger.debug(f"Trying {len(variants)} preprocessing variants")
             
+            # Set best_method to first method if we have variants
+            if variants:
+                best_method = variants[0][0]  # First method name
+            
+            methods_tried = 0
+            methods_succeeded = 0
+            
             for method_name, processed_image in variants:
+                methods_tried += 1
                 try:
                     text, confidence = self._run_ocr(processed_image)
+                    methods_succeeded += 1
                     
                     logger.debug(f"Method '{method_name}': text='{text}', confidence={confidence:.3f}")
                     
@@ -117,15 +132,37 @@ class OCREngine:
                         if confidence >= min_confidence:
                             self.method_success_count[method_name] += 1
                     
-                    # Keep best result
-                    if confidence > best_confidence:
+                    # Calculate adjusted confidence (penalize truncated text)
+                    adjusted_confidence = confidence
+                    
+                    # Penalize methods that extract truncated text
+                    # Look for incomplete patterns that suggest truncation
+                    truncation_patterns = [
+                        r'Stakes:\s*\d+$',  # "Stakes: 100" (missing /200)
+                        r'Blinds:\s*\d+$',  # "Blinds: 100" (missing /200)
+                        r'\d+\s*$',  # Ends with just a number
+                    ]
+                    
+                    for pattern in truncation_patterns:
+                        if re.search(pattern, text.strip()):
+                            adjusted_confidence *= 0.7  # 30% penalty for truncated text
+                            logger.debug(f"Applied truncation penalty to method '{method_name}': '{text}'")
+                            break
+                    
+                    # Keep best result (use adjusted confidence for selection)
+                    if adjusted_confidence > best_confidence:
                         best_text = text
-                        best_confidence = confidence
+                        best_confidence = adjusted_confidence
                         best_method = method_name
                 
                 except Exception as e:
                     logger.error(f"OCR failed for method '{method_name}': {e}")
                     continue
+            
+            # If all methods failed, return high confidence for empty result
+            if methods_succeeded == 0:
+                logger.debug("All OCR methods found no text - returning high confidence for empty result")
+                return "", 1.0, "none"
         else:
             # Preprocessing disabled, use original image only
             logger.debug("Preprocessing disabled, using original image")
@@ -134,7 +171,7 @@ class OCREngine:
                 best_method = "original"
             except Exception as e:
                 logger.error(f"OCR failed: {e}")
-                return "", 0.0, "none"
+                return "", 1.0, "none"  # High confidence that there's no text if OCR fails
         
         # Log result
         if best_confidence >= min_confidence:
@@ -184,6 +221,8 @@ class OCREngine:
         results = self.reader.readtext(image, paragraph=paragraph)
         
         if not results:
+            # No text detected - return low confidence for empty result
+            logger.debug("No text detected in image - returning low confidence for empty result")
             return "", 0.0
         
         # Extract text and confidence
@@ -198,7 +237,7 @@ class OCREngine:
             confidences = [result[2] for result in results]
             
             text = " ".join(texts)
-            confidence = sum(confidences) / len(confidences) if confidences else 0.0
+            confidence = round(sum(confidences) / len(confidences), 3) if confidences else 0.0
         
         return text.strip(), confidence
     
