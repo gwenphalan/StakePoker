@@ -502,24 +502,42 @@ class GTOChartLoader:
         Returns:
             Normalized hand (e.g., "AKs", "99", "AKo")
         """
-        # Remove suits and convert to standard notation
-        hand = hand.replace('h', '').replace('d', '').replace('c', '').replace('s', '')
-        hand = hand.replace('♠', '').replace('♥', '').replace('♦', '').replace('♣', '')
+        # Check if already in standard format (e.g., "AKs", "AKo", "AA")
+        if len(hand) == 3 and hand[2] in ['s', 'o']:
+            # Already normalized with s/o indicator
+            return hand
+        elif len(hand) == 2 and hand[0] == hand[1]:
+            # Pocket pair (e.g., "AA")
+            return hand
         
-        if len(hand) >= 2:
-            rank1 = hand[0]
-            rank2 = hand[1] if len(hand) > 1 else hand[0]
+        # Extract the suits before removing them
+        suits = []
+        for char in hand:
+            if char in ['h', 'd', 'c', 's', '♠', '♥', '♦', '♣']:
+                if char in ['h', '♥']:
+                    suits.append('h')
+                elif char in ['d', '♦']:
+                    suits.append('d')
+                elif char in ['c', '♣']:
+                    suits.append('c')
+                elif char in ['s', '♠']:
+                    suits.append('s')
+        
+        # Remove suits from the hand string
+        clean_hand = hand.replace('h', '').replace('d', '').replace('c', '').replace('s', '')
+        clean_hand = clean_hand.replace('♠', '').replace('♥', '').replace('♦', '').replace('♣', '')
+        
+        if len(clean_hand) >= 2:
+            rank1 = clean_hand[0]
+            rank2 = clean_hand[1] if len(clean_hand) > 1 else clean_hand[0]
             
             # Determine if suited, pair, or offsuit
             if rank1 == rank2:
                 return f"{rank1}{rank2}"  # Pair
-            elif len(hand) > 2 and hand[2] == 's':
-                return f"{rank1}{rank2}s"  # Suited
-            elif len(hand) > 2 and hand[2] == 'o':
-                return f"{rank1}{rank2}o"  # Offsuit
+            elif len(suits) == 2 and suits[0] == suits[1]:
+                return f"{rank1}{rank2}s"  # Suited (same suits)
             else:
-                # Default to offsuit if unclear
-                return f"{rank1}{rank2}o"
+                return f"{rank1}{rank2}o"  # Offsuit or default
         
         return hand
     

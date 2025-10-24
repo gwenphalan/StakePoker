@@ -746,10 +746,11 @@ class TestDecisionEngine:
             button_position=1,
             table_info=TableInfo(bb=25.0, sb=12.5),
             community_cards=[
-            Card(rank='A', suit='clubs'),
-            Card(rank='K', suit='hearts'),
-            Card(rank='Q', suit='diamonds')
-        ]
+                Card(rank='A', suit='clubs'),
+                Card(rank='K', suit='hearts'),
+                Card(rank='Q', suit='diamonds')
+            ]
+        )
         
         # Mock components
         self.mock_range_est.estimate_ranges.return_value = ["AA", "KK", "QQ"]
