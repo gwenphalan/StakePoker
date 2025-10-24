@@ -79,8 +79,14 @@ class TestRangeEstimator:
         opponent2.is_active = True
         opponent2.position = "CO"
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [hero, opponent1, opponent2]
+        game_state = GameState(
+            players=[hero, opponent1, opponent2],
+            pot=0.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25.0, sb=12.5),
+            community_cards=[]
+        )
         
         # Mock GTO loader responses
         self.mock_gto_loader.get_opening_range.return_value = ["AA", "KK", "QQ"]
@@ -114,8 +120,34 @@ class TestRangeEstimator:
         player.is_active = True
         player.position = None
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [player]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+        
+
+        
+        game_state = GameState(
+
+        
+            players=[player, opponent],
+
+        
+            pot=0.0,
+
+        
+            phase="preflop",
+
+        
+            button_position=1,
+
+        
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+        
+            community_cards=[]
+
+        
+        )
         
         ranges = self.estimator._estimate_player_range(player, game_state)
         
@@ -130,8 +162,34 @@ class TestRangeEstimator:
         player.position = "UTG"
         player.current_bet = 0
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [player]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+        
+
+        
+        game_state = GameState(
+
+        
+            players=[player, opponent],
+
+        
+            pot=0.0,
+
+        
+            phase="preflop",
+
+        
+            button_position=1,
+
+        
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+        
+            community_cards=[]
+
+        
+        )
         
         self.mock_gto_loader.get_opening_range.return_value = ["AA", "KK", "QQ"]
         
@@ -147,9 +205,34 @@ class TestRangeEstimator:
         player.position = "UTG"
         player.current_bet = 50  # Small bet
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [player]
-        game_state.table_info = TableInfo(bb=25, sb=12.5)
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+        
+
+        
+        game_state = GameState(
+
+        
+            players=[player, opponent],
+
+        
+            pot=0.0,
+
+        
+            phase="preflop",
+
+        
+            button_position=1,
+
+        
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+        
+            community_cards=[]
+
+        
+        )
         
         self.mock_gto_loader.get_calling_range.return_value = ["JJ", "TT", "99"]
         
@@ -165,9 +248,34 @@ class TestRangeEstimator:
         player.position = "UTG"
         player.current_bet = 200  # Large bet
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [player]
-        game_state.table_info = TableInfo(bb=25, sb=12.5)
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+        
+
+        
+        game_state = GameState(
+
+        
+            players=[player, opponent],
+
+        
+            pot=0.0,
+
+        
+            phase="preflop",
+
+        
+            button_position=1,
+
+        
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+        
+            community_cards=[]
+
+        
+        )
         
         self.mock_gto_loader.get_3bet_range.return_value = ["AA", "KK", "AKs"]
         
@@ -188,9 +296,14 @@ class TestRangeEstimator:
         raiser.is_active = True
         raiser.current_bet = 100
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [player, raiser]
-        game_state.table_info = TableInfo(bb=25, sb=12.5)
+        game_state = GameState(
+            players=[player, raiser],
+            pot=0.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25.0, sb=12.5),
+            community_cards=[]
+        )
         
         self.mock_gto_loader.get_blind_defense_range.return_value = ["22+", "A2s+"]
         
@@ -205,8 +318,34 @@ class TestRangeEstimator:
         player.is_active = True
         player.current_bet = 0
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [player]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+        
+
+        
+        game_state = GameState(
+
+        
+            players=[player, opponent],
+
+        
+            pot=0.0,
+
+        
+            phase="preflop",
+
+        
+            button_position=1,
+
+        
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+        
+            community_cards=[]
+
+        
+        )
         
         context = self.estimator._get_action_context(player, game_state)
         assert context == "opening"
@@ -217,9 +356,34 @@ class TestRangeEstimator:
         player.is_active = True
         player.current_bet = 200  # Large bet
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [player]
-        game_state.table_info = TableInfo(bb=25, sb=12.5)
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+        
+
+        
+        game_state = GameState(
+
+        
+            players=[player, opponent],
+
+        
+            pot=0.0,
+
+        
+            phase="preflop",
+
+        
+            button_position=1,
+
+        
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+        
+            community_cards=[]
+
+        
+        )
         
         context = self.estimator._get_action_context(player, game_state)
         assert context == "3betting"
@@ -230,9 +394,34 @@ class TestRangeEstimator:
         player.is_active = True
         player.current_bet = 50  # Small bet
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [player]
-        game_state.table_info = TableInfo(bb=25, sb=12.5)
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+        
+
+        
+        game_state = GameState(
+
+        
+            players=[player, opponent],
+
+        
+            pot=0.0,
+
+        
+            phase="preflop",
+
+        
+            button_position=1,
+
+        
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+        
+            community_cards=[]
+
+        
+        )
         
         context = self.estimator._get_action_context(player, game_state)
         assert context == "calling"
@@ -258,7 +447,6 @@ class TestRangeEstimator:
         player.current_bet = 200  # Large raise
         
         game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.table_info = TableInfo(bb=25, sb=12.5)
         
         base_range = ["AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55"]
         
@@ -327,9 +515,14 @@ class TestRangeEstimator:
         raiser = Player(seat_number=2, is_hero=False, stack=1000.0)
         raiser.current_bet = 100
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [player, raiser]
-        game_state.table_info = TableInfo(bb=25, sb=12.5)
+        game_state = GameState(
+            players=[player, raiser],
+            pot=0.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25.0, sb=12.5),
+            community_cards=[]
+        )
         
         assert self.estimator._is_facing_raise(player, game_state) is True
     
@@ -340,9 +533,14 @@ class TestRangeEstimator:
         other_player = Player(seat_number=2, is_hero=False, stack=1000.0)
         other_player.current_bet = 25  # Just big blind
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [player, other_player]
-        game_state.table_info = TableInfo(bb=25, sb=12.5)
+        game_state = GameState(
+            players=[player, other_player],
+            pot=0.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25.0, sb=12.5),
+            community_cards=[]
+        )
         
         assert self.estimator._is_facing_raise(player, game_state) is False
     
@@ -353,9 +551,14 @@ class TestRangeEstimator:
         raiser = Player(seat_number=2, is_hero=False, stack=1000.0)
         raiser.current_bet = 100
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [player, raiser]
-        game_state.table_info = TableInfo(bb=25, sb=12.5)
+        game_state = GameState(
+            players=[player, raiser],
+            pot=0.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25.0, sb=12.5),
+            community_cards=[]
+        )
         
         assert self.estimator._is_facing_open(player, game_state) is True
     
@@ -365,8 +568,34 @@ class TestRangeEstimator:
         player.is_active = True
         player.position = "UTG"
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [player]
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
+
+        
+        
+
+        
+        game_state = GameState(
+
+        
+            players=[player, opponent],
+
+        
+            pot=0.0,
+
+        
+            phase="preflop",
+
+        
+            button_position=1,
+
+        
+            table_info=TableInfo(bb=25.0, sb=12.5),
+
+        
+            community_cards=[]
+
+        
+        )
         
         # Mock GTO loader to raise exception
         self.mock_gto_loader.get_opening_range.side_effect = Exception("GTO error")
@@ -393,8 +622,14 @@ class TestRangeEstimator:
         opponent3 = Player(seat_number=4, is_hero=False, stack=1000.0)
         opponent3.is_active = False  # Folded
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [hero, opponent1, opponent2, opponent3]
+        game_state = GameState(
+            players=[hero, opponent1, opponent2, opponent3],
+            pot=0.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25.0, sb=12.5),
+            community_cards=[]
+        )
         
         # Mock different ranges for different opponents
         self.mock_gto_loader.get_opening_range.side_effect = [
@@ -422,12 +657,18 @@ class TestRangeEstimator:
         opponent2 = Player(seat_number=3, is_hero=False, stack=1000.0)
         opponent2.is_active = False  # Folded
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.players = [hero, opponent1, opponent2]
-        
         player = Player(seat_number=2, is_hero=False, stack=1000.0)
         player.is_active = True
         player.position = "UTG"
+        
+        game_state = GameState(
+            players=[hero, opponent1, opponent2],
+            pot=0.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25.0, sb=12.5),
+            community_cards=[]
+        )
         
         self.mock_gto_loader.get_opening_range.return_value = ["AA", "KK"]
         
@@ -441,9 +682,16 @@ class TestRangeEstimator:
         player = Player(seat_number=1, is_hero=False, stack=1000.0)
         player.is_active = True
         player.current_bet = 0
+        opponent = Player(seat_number=2, is_hero=False, stack=1000.0)
         
-        game_state = AdvisorTestFixtures.create_minimal_game_state()
-        game_state.table_info = TableInfo(bb=25, sb=12.5)
+        game_state = GameState(
+            players=[player, opponent],
+            pot=0.0,
+            phase="preflop",
+            button_position=1,
+            table_info=TableInfo(bb=25.0, sb=12.5),
+            community_cards=[]
+        )
         
         # Test with empty base range
         empty_range = []
